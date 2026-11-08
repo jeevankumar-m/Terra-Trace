@@ -24,7 +24,7 @@ from analysis.compare_pair import compute_layers, display_ranges, write_outputs
 from analysis.detect_candidates import detect
 from analysis.inspect_product import open_scene, scene_manifest
 from analysis.prepare_gcov import load_aoi, prepare, to_crs
-from analysis.summarize import summarize
+from analysis.summarize import fmt_db, summarize
 from analysis.validate_pair import _check, validate_pair
 
 SYNTHETIC_LABEL = "SYNTHETIC DEV DATA — not NISAR observations"
@@ -107,7 +107,7 @@ def run(scene_a: str, scene_b: str | None, aoi_path: str, analysis_id: str, area
                 big = abs(med) > config.BACKGROUND_OFFSET_WARN_DB
                 qa["checks"].append(_check(
                     f"background_offset_{ch}", not big, round(med, 3), config.BACKGROUND_OFFSET_WARN_DB,
-                    f"Scene-wide median Δ{ch.upper()} {med:+.2f} dB" + (
+                    f"Scene-wide median Δ{ch.upper()} {fmt_db(med)}" + (
                         ": large offset between dates, possibly calibration/processing rather than surface "
                         "change; z-scores are relative to this background" if big else " (near zero)"),
                     warn=True))

@@ -41,14 +41,19 @@ def pattern_label(z_hh: float, z_hv: float | None) -> str:
     return "AMBIGUOUS_MIXED"
 
 
+def fmt_db(x: float) -> str:
+    """Signed dB with a real minus sign: +1.8 dB, −3.4 dB."""
+    return f"{x:+.1f}".replace("-", "−") + " dB"
+
+
 def _channel_reason(name, z, d):
     k, bg = config.K_ROBUST, config.BACKGROUND_Z
     if abs(z) >= k:
         return {"status": "pass", "text": f"{name} change exceeds configured robust threshold "
-                f"(median Δ{name} {d:+.1f} dB, |z| {abs(z):.1f} ≥ k {k:g})"}
+                f"(median Δ{name} {fmt_db(d)}, |z| {abs(z):.1f} ≥ k = {k:.1f})"}
     if abs(z) < bg:
         return {"status": "pass", "text": f"{name} response remains inside configured background range "
-                f"(|z| {abs(z):.1f} < {bg:g})"}
+                f"(|z| {abs(z):.1f} < {bg:.1f})"}
     return {"status": "warn", "text": f"{name} change is elevated but below threshold (|z| {abs(z):.1f})"}
 
 
