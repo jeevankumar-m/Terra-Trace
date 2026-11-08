@@ -157,6 +157,7 @@ def run(scene_a: str, scene_b: str | None, aoi_path: str, analysis_id: str, area
         "legend": legend,
         "method": config.METHOD_ID,
         "threshold": threshold,
+        "background": background,
         "quality": {"common_valid_pixel_fraction": summary["common_valid_pixel_fraction"],
                     "aoi_area_ha": summary["aoi_area_ha"], "analysed_area_ha": summary["analysed_area_ha"],
                     "aoi_pixels": q["aoi_pixels"],

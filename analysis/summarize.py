@@ -6,7 +6,7 @@ import math
 
 import numpy as np
 from scipy import ndimage
-from shapely.geometry import Polygon, mapping
+from shapely.geometry import MultiPolygon, Polygon, mapping
 from shapely.ops import unary_union
 
 from analysis import config
@@ -137,6 +137,9 @@ def summarize(det: dict, layers: dict, valid: np.ndarray, pixel_area_m2: float, 
         dom = st.get("delta_hv_median_db") if pat == "HV_DOMINANT_CHANGE" else st["delta_hh_median_db"]
         direction = "mixed" if pat == "AMBIGUOUS_MIXED" else ("increase" if dom > 0 else "decrease")
         g4326 = to_crs(g, 4326, src=epsg)
+        # Web outline: holes smaller than the MMU (speckle gaps) are closed for legibility.
+        # area_ha, centroid and bbox above are computed from the exact pixel region.
+        display = to_crs(_close_small_holes(g, config.MMU_HA * 1e4), 4326, src=epsg)
         c = to_crs(g.centroid, 4326, src=epsg)
         with np.errstate(invalid="ignore"):
             frac = {f"{ch}_exceeding_fraction": _r(float((np.abs(det['z'][ch][win][sel]) >= det['k']).mean()), 4)
@@ -166,7 +169,7 @@ def summarize(det: dict, layers: dict, valid: np.ndarray, pixel_area_m2: float, 
             "interpretation_limit": config.INTERPRETATION_LIMIT,
         }
         candidates.append(cand)
-        gj = mapping(g4326)
+        gj = mapping(display)
         features.append({"type": "Feature", "id": i, "geometry": _round_geom(gj), "properties": {
             "candidate_id": cand["candidate_id"], "area_ha": cand["area_ha"], "pattern": pat,
             "evidence_level": lvl, "direction": direction,
@@ -174,6 +177,12 @@ def summarize(det: dict, layers: dict, valid: np.ndarray, pixel_area_m2: float, 
             "delta_hv_median_db": cand["statistics"].get("delta_hv_median_db")}})
     fc = {"type": "FeatureCollection", "features": features}
     return candidates, fc
+
+
+def _close_small_holes(g, min_area_m2: float):
+    parts = [Polygon(p.exterior, [r for r in p.interiors if Polygon(r).area >= min_area_m2])
+             for p in getattr(g, "geoms", [g])]
+    return parts[0] if len(parts) == 1 else MultiPolygon(parts)
 
 
 def _round_geom(gj, n=7):

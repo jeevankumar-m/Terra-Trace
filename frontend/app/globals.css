@@ -1,26 +1,48 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* TerraTrace tokens: calm light canvas, one ink-blue accent, semantic colours only where they carry meaning. */
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --color-canvas: #f6f7f9;
+  --color-card: #ffffff;
+  --color-line: #e6e8ec;
+  --color-line-strong: #d3d7de;
+  --color-ink: #14213d;      /* primary text + brand accent (deep ink blue) */
+  --color-ink-2: #4a5263;    /* secondary text */
+  --color-muted: #5f6878;    /* labels (>= 4.5:1 on white) */
+  --color-accent: #1f4e79;
+  --color-accent-soft: #e9eff6;
+
+  --color-pass: #127a3a;
+  --color-pass-soft: #e5f4ea;
+  --color-warn: #8a5a00;
+  --color-warn-soft: #fff3d6;
+  --color-fail: #b42318;
+  --color-fail-soft: #fde8e6;
+
+  --color-dec: #2166ac;      /* backscatter decrease (RdBu_r blue pole) */
+  --color-inc: #b2182b;      /* backscatter increase (RdBu_r red pole) */
+
+  --radius-card: 14px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html, body { height: 100%; }
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
 }
+.tnum { font-variant-numeric: tabular-nums; }
+.label { font-size: 12px; font-weight: 500; color: var(--color-muted); letter-spacing: 0.02em; }
+
+/* MapLibre popup restyle: small, crisp, no chrome */
+.maplibregl-popup-content {
+  padding: 6px 10px; border-radius: 8px; box-shadow: 0 4px 16px rgb(20 33 61 / 0.12);
+  font: 500 12px/1.4 var(--font-sans); color: var(--color-ink);
+}
+.maplibregl-popup-tip { display: none; }
+.maplibregl-ctrl-scale { border-color: var(--color-ink-2); color: var(--color-ink-2); font-size: 11px; }
