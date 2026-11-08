@@ -1,0 +1,42 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "nasa_sample_lband",
+        "name": "NASA public GCOV sample (track 30, frame 19)",
+        "synthetic": false,
+        "status": "reader_validation",
+        "why": "Public NASA NISAR sample GCOV pair used to validate the HDF5 reader and pipeline end to end on a real product structure. Metadata states missionId=ALOS, instrumentName=PALSAR, radarBand=L (2008 acquisitions in NISAR GCOV format). It is NOT NISAR S-band data and fails the TerraTrace S-band contract by design. AOI = 15 x 15 km box at the grid centre (analyst choice)."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -118.056568,
+              34.868054
+            ],
+            [
+              -117.892473,
+              34.869369
+            ],
+            [
+              -117.891016,
+              34.73412
+            ],
+            [
+              -118.054844,
+              34.732811
+            ],
+            [
+              -118.056568,
+              34.868054
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

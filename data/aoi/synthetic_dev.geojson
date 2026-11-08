@@ -1,0 +1,42 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "synthetic_dev",
+        "name": "Synthetic development grid",
+        "synthetic": true,
+        "status": "synthetic",
+        "why": "Generated test grid placed in open ocean near 0\u00b0N 0\u00b0E for UI development and tests. Not an observation of any real place."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.30656,
+              0.7211724
+            ],
+            [
+              0.3747906,
+              0.7212125
+            ],
+            [
+              0.3748281,
+              0.6525257
+            ],
+            [
+              0.3065985,
+              0.6524894
+            ],
+            [
+              0.30656,
+              0.7211724
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}
