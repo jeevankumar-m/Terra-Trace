@@ -1,0 +1,19 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "nagapattinam_vedaranyam",
+        "name": "Nagapattinam coast: Vedaranyam swamp and Point Calimere",
+        "synthetic": false,
+        "status": "proposed",
+        "why": "Southern Cauvery delta coast in Nagapattinam district: tidal mudflats, the Great Vedaranyam Swamp, Point Calimere wetlands and adjoining agricultural fields. ISRO's NISAR S-band GCOV release shows a Nagapattinam scene (2 July 2026) with mangroves, fields, wetlands and coastal lagoons. PROPOSED analyst AOI: verify it lies inside the footprint of a passing scene pair and shrink it to that footprint before analysis."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[79.55, 10.42], [79.90, 10.42], [79.90, 10.25], [79.55, 10.25], [79.55, 10.42]]]
+      }
+    }
+  ]
+}
