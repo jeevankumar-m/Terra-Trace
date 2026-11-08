@@ -1,0 +1,4 @@
+Makefile text eol=lf
+*.sh text eol=lf
+*.h5 binary
+*.tif binary
