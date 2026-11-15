@@ -24,7 +24,7 @@ polygons with measured area, and lets a reviewer inspect the evidence behind eac
 
 **60-second judge flow.** See the study area and pair (Date A → Date B, QA badge) → toggle Date A HH / Date B HH / ΔHH /
 HV / ΔHV / Δ(HH/HV) → see candidate polygons → click one → read area (ha), HH/HV medians, Δ dB, valid coverage,
-evidence reasons, "what it does not prove", provenance. (Export comes in phase 2.)
+evidence reasons, "what it does not prove", provenance → Export (GeoJSON / CSV / evidence report).
 
 **Target user.** Coastal researcher, wetland analyst, district planning team or disaster-science student who needs to
 investigate a surface-change signal without opening raw HDF5 or assembling GIS layers by hand.
@@ -159,7 +159,7 @@ store threshold + software commit with every output.
 
 **Phase 1 (now):** Feature 1 = pair QA + change-detection engine + API. Feature 2 = comparison workspace
 (map, 8-layer switcher, legends, candidate polygons, evidence inspector, QA drawer).
-**Deferred (design hooks exist):** GeoJSON/CSV/PDF export (`manifest.exports` reserved); optical/water-mask corroboration
+**Done 2026-11-15:** GeoJSON/CSV/HTML-report export (`analysis/export.py`). **Deferred (design hooks exist):** optical/water-mask corroboration
 (`corroboration` key + inspector row); rainfall/tide; swipe compare; 3+ dates; multiple AOIs in UI; live threshold slider;
 polarimetric decomposition; GUNW; AI explanation; auth/DB/deployment.
 **Stretch order (blueprint §16, only after MVP works):** 3rd/4th date → water-reference corroboration → rainfall/tide →
@@ -182,7 +182,7 @@ No `make` on Jeevan's Windows machine: use `powershell -ExecutionPolicy Bypass -
 | Task | Command |
 |---|---|
 | setup | `make setup` (venv + `pip install -r requirements.txt` + `pnpm install` in frontend) |
-| tests | `make test` (pytest, 25 tests) |
+| tests | `make test` (pytest, 26 tests) |
 | synthetic dev analysis | `make synthetic` |
 | NASA sample (exploratory) | `make sample` |
 | real pair gate | `.venv/Scripts/python -m analysis.catalog data/raw/<area> --aoi data/aoi/<area>.geojson` |
@@ -195,7 +195,7 @@ Outputs per analysis: `manifest.json` (blueprint §9 schema + status/fallback/le
 Re-runs are byte-identical except `manifest.provenance.created_utc/command`.
 
 API: `/api/health`, `/api/areas`, `/api/scenes?area_id=`, `/api/pairs?area_id=`, `/api/analyses` (list + default),
-`/api/analyses/{id}`, `/api/analyses/{id}/candidates`, `/api/candidates/{id}/{cid}`, `/api/tiles/{id}/{layer}/{z}/{x}/{y}.png`.
+`/api/analyses/{id}`, `/api/analyses/{id}/candidates`, `/api/candidates/{id}/{cid}`, `/api/analyses/{id}/export/{candidates.geojson|candidates.csv|report.html}`, `/api/tiles/{id}/{layer}/{z}/{x}/{y}.png`.
 
 **Gotcha:** use `127.0.0.1`, not `localhost`, for the API on Windows (localhost costs ~2 s per request via IPv6 fallback).
 **Gotcha:** `maplibre-gl.css` forces `.maplibregl-map{position:relative}`; the map container needs a sized wrapper.

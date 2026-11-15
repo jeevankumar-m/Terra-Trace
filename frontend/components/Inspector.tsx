@@ -3,7 +3,7 @@
 import type { FeatureCollection } from "geojson";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import {
-  LEVEL_STYLE, PATTERNS, api, fmtDate, fmtDb, fmtDbNum, fmtHa, fmtLonLat, fmtPct, fmtUtc, safeSentence,
+  API_BASE, LEVEL_STYLE, PATTERNS, api, fmtDate, fmtDb, fmtDbNum, fmtHa, fmtLonLat, fmtPct, fmtUtc, safeSentence,
   type Analysis, type Candidate, type CandidateProps, type Level, type Pattern, type Status,
 } from "@/lib/tt";
 
@@ -141,6 +141,19 @@ function Summary({ analysis: a, candidates, onSelect }: {
           <dt className="text-muted">Radiometry</dt><dd>{a.preprocessing.radiometric_convention}</dd>
           <dt className="text-muted">Corroboration</dt><dd className="text-ink-2">Not available (phase 1)</dd>
         </dl>
+      </Section>
+
+      <Section title="Export">
+        <div className="flex flex-wrap gap-2">
+          {([["candidates.geojson", "GeoJSON"], ["candidates.csv", "CSV"], ["report.html", "Evidence report"]] as const).map(([f, l]) => (
+            <a key={f} href={`${API_BASE}/api/analyses/${encodeURIComponent(a.analysis_id)}/export/${f}`}
+              target={f === "report.html" ? "_blank" : undefined} rel="noreferrer"
+              className="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] font-medium transition-colors duration-150 hover:bg-canvas">
+              {l}
+            </a>
+          ))}
+        </div>
+        <p className="mt-2 text-[12px] text-muted">Every export carries the data label and the interpretation limit.</p>
       </Section>
     </div>
   );

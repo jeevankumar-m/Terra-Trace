@@ -122,6 +122,25 @@ def candidate(analysis_id: str, candidate_id: str):
     return {**c, "analysis_id": analysis_id, "geometry": geom}
 
 
+EXPORTS = {"candidates.geojson": "application/geo+json", "candidates.csv": "text/csv; charset=utf-8",
+           "report.html": "text/html; charset=utf-8"}
+
+
+@app.get("/api/analyses/{analysis_id}/export/{name}", response_class=Response)
+def export(analysis_id: str, name: str):
+    from analysis import export as X
+    if name not in EXPORTS:
+        raise HTTPException(404, f"export '{name}' not available; use one of {sorted(EXPORTS)}")
+    m = _manifest(analysis_id)
+    d = DERIVED / analysis_id
+    body = (X.geojson(m, _read(d / "candidates.geojson")) if name == "candidates.geojson"
+            else X.csv_bytes(m, _read(d / "metrics.json")) if name == "candidates.csv"
+            else X.report_html(m, _read(d / "metrics.json")))
+    disp = "inline" if name == "report.html" else "attachment"
+    return Response(body, media_type=EXPORTS[name],
+                    headers={"Content-Disposition": f'{disp}; filename="{analysis_id}_{name}"'})
+
+
 # --- tiles ---------------------------------------------------------------------------------
 VALID_MASK_CMAP = {0: (99, 107, 121, 150), 1: (0, 0, 0, 0)}  # excluded = muted grey, analysed = clear
 

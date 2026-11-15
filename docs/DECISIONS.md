@@ -71,3 +71,14 @@ Newest last. Each entry: decision · why · source (when something we looked up 
     Makefile LF.
 25. **Python 3.13** used (3.11+ required). Deps pinned in `requirements.txt` after a clean install. Playwright is a
     dev-only tool for screenshots and is not pinned.
+26. **First real pair (2026-11-15): track 084 / Ascending / frame 007 / mode 3700 / DHNA / CRID P00500.**
+    Bhoonidhi search (centre 10.33 N 79.72 E, 20 km, 7 Jul to 15 Nov 2026, NISAR SSAR Level-2 GCOV) returned DH
+    scenes on this track every 12 days, from 14 Jul to 11 Nov 2026. Picked the two newest **PR** (standard) products:
+    `NISAR_S2_PR_GCOV_032_084_A_007_3700_DHNA_A_20261006T001552_20261006T001629_P00500_M_F_I_001` (Date A) and
+    `NISAR_S2_PR_GCOV_033_084_A_007_3700_DHNA_A_20261018T001553_20261018T001629_P00500_M_F_I_001` (Date B).
+    The 30 Oct and 11 Nov scenes were **UR** (urgent response, possibly partial), so they were skipped. The orbit-accuracy
+    field is `M` (medium), not `P`. A second track (149 D 083, mode 2500, CRNA, compact-pol) also covers the area,
+    but it is not dual-pol HH/HV.
+27. **Bhoonidhi site bug (observed 2026-11-15):** `bhoonidhi/js/odap.js` has an unbalanced `)` near line 7759
+    (`includes("WISP")) &&`). The script fails to parse, so login stops after sending the OTP, and the browse map is
+    blank. Workaround: a Chrome DevTools Local Override of `odap.js` with that one `)` removed. See DATA_ACQUISITION §0.

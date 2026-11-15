@@ -35,6 +35,16 @@ def test_endpoints(client):
     assert c["geometry"]["type"] in ("Polygon", "MultiPolygon")
 
 
+def test_exports(client):
+    gj = client.get("/api/analyses/synthetic_dev/export/candidates.geojson")
+    assert gj.status_code == 200 and gj.json()["properties"]["data_label"].startswith("SYNTHETIC")
+    rows = client.get("/api/analyses/synthetic_dev/export/candidates.csv").content.decode("utf-8-sig").splitlines()
+    assert rows[0].startswith("analysis_id,candidate_id") and len(rows) == len(gj.json()["features"]) + 1
+    rep = client.get("/api/analyses/synthetic_dev/export/report.html").text
+    assert "SYNTHETIC DEV DATA" in rep and "cause is not established" in rep
+    assert client.get("/api/analyses/synthetic_dev/export/x.exe").status_code == 404
+
+
 def test_tiles_and_errors(client):
     m = client.get("/api/analyses/synthetic_dev").json()
     lon = (m["bounds_lonlat"][0] + m["bounds_lonlat"][2]) / 2

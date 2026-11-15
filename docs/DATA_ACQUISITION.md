@@ -14,6 +14,13 @@ pipeline runs without code changes.
 - [ ] Note any order/download limits shown after login (ISRO's pages don't state them).
 - [ ] Earthdata login is **not** needed. The NASA sample used for reader validation is public.
 
+- [ ] **If login hangs after the OTP email, or the map is blank:** Bhoonidhi's `odap.js` had a syntax error on
+      2026-11-15 (DECISIONS 27). Fix: open DevTools (F12) and go to Sources › Overrides › select a folder. In the Page
+      tab, right-click `bhoonidhi/js/odap.js` and choose Override content. Change `includes("WISP")) &&` to
+      `includes("WISP") &&`, save, and reload.
+- [ ] Open data needs no payment: add scenes to the **Open_Data cart**, click **Confirm**, then use the green
+      download icon per scene.
+
 ## 1. Search (Browse & Order)
 
 - [ ] **Area of interest.** Start with the proposed AOI `data/aoi/nagapattinam_vedaranyam.geojson` (Vedaranyam swamp +

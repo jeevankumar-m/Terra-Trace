@@ -43,6 +43,6 @@ Legend: ✅ done and verified · 🟡 done, not yet verified on real S-band data
 ## Next (phase 2, in order)
 
 1. Run the real Nagapattinam pair; verify the mask flag, posting and CRID on real S-band; tune MMU if needed.
-2. Export: GeoJSON / CSV / one-page HTML evidence report from the manifest (`manifest.exports` reserved).
+2. ✅ Export (2026-11-15): `GET /api/analyses/{id}/export/{candidates.geojson|candidates.csv|report.html}` via `analysis/export.py`; Inspector "Export" section. Test: `test_exports`.
 3. Optional corroboration layer (water mask / optical context), never subtracted.
 4. Demo branch freeze, recording, static PNG fallback.
