@@ -62,7 +62,7 @@ export default function MapView(p: MapViewProps) {
         const beforeSymbols = m.getLayer("labels") ? "labels" : m.getStyle().layers.find((l) => l.type === "symbol")?.id;
         for (const [k, url] of Object.entries(analysis.tiles)) {
           m.addSource(`r-${k}`, { type: "raster", tiles: [API_BASE + url], tileSize: 256,
-            bounds: analysis.bounds_lonlat, maxzoom: 15 });
+            bounds: analysis.bounds_lonlat, maxzoom: analysis.tiles_maxzoom ?? 15 });
           m.addLayer({ id: `r-${k}`, type: "raster", source: `r-${k}`, layout: { visibility: "none" },
             paint: { "raster-resampling": /^(rgb_|change_)/.test(k) ? "linear" : "nearest", "raster-fade-duration": 0 } }, beforeSymbols);
         }

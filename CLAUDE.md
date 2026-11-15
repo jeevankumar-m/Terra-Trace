@@ -261,5 +261,8 @@ Never demo `synthetic_dev` or the NASA L-band sample as results. They exist for 
   (before/after swipe and play), Insights (rain, area by type, histograms, top regions) and Method. Default analysis
   `cauvery_delta_20261006_20261018` (whole delta, 50 m via `--decimate 5`). Satellite basemap (EOX). Colour
   composites `rgb_a/rgb_b/change_hh` are built per tile. `analysis.context` writes the rainfall. RFI flags: DECISIONS 32.
+- 2026-11-15 (latest): landing page at `/`, app at `/app`, new visual system (Poppins/Montserrat, #0175FE + #FAC504),
+  emblem in `frontend/public/brand/`. **Static mode default**: `python -m analysis.export_static` -> `frontend/public/data`
+  (re-run after any analysis/story change). Live API only when `NEXT_PUBLIC_API_BASE` is set. Vercel root dir = `frontend`.
 - (superseded) Proposed AOI `data/aoi/nagapattinam_vedaranyam.geojson` was `status: proposed`; now `verified`. Shrink it to the passing pair's footprint
   and mark it `verified` after the first real run.

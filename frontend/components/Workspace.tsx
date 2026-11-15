@@ -8,7 +8,7 @@ import { Logo } from "./Logo";
 import MapPanel, { MapSkeleton } from "./MapPanel";
 import { CompareView, InsightsView, MethodView, StoryView } from "./Views";
 import {
-  API_BASE, ApiError, api, flagMap, fmtUtc, type Analysis, type AnalysisListItem, type Flag, type Rainfall, type Scene, type Story,
+  API_BASE, ApiError, STATIC, api, flagMap, fmtUtc, type Analysis, type AnalysisListItem, type Flag, type Rainfall, type Scene, type Story,
 } from "@/lib/tt";
 
 type View = "story" | "explore" | "compare" | "insights" | "method";
@@ -289,8 +289,10 @@ function LoadingShell() {
 function EmptyState({ state, onRetry }: { state: Exclude<Load, { kind: "ready" | "loading" }>; onRetry: () => void }) {
   const body =
     state.kind === "api_down" ? {
-      t: "Can't reach the TerraTrace API", d: `Nothing answered at ${API_BASE}. Start the API in another terminal:`,
-      cmd: "make api        # Windows: powershell -File tasks.ps1 api",
+      t: "Can't load the TerraTrace data", d: STATIC
+        ? "The static data in public/data is missing. Generate it from the analysis folders:"
+        : `Nothing answered at ${API_BASE}. Start the API in another terminal:`,
+      cmd: STATIC ? "python -m analysis.export_static" : "make api        # Windows: powershell -File tasks.ps1 api",
     } : state.kind === "no_analysis" ? {
       t: "No analysis yet", d: "The API is running but no analysis folder exists in data/derived/. Run one:",
       cmd: "make analysis SCENE_A=data/raw/<area>/A.h5 SCENE_B=data/raw/<area>/B.h5 AOI=data/aoi/<area>.geojson ID=<id>\n# synthetic dev data only:  make synthetic",

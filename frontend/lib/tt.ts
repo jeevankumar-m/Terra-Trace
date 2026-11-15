@@ -2,7 +2,11 @@
 
 import type { Geometry } from "geojson";
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000";
+// Static mode (default): the app reads the frozen API in public/data, written by `python -m analysis.export_static`,
+// so it deploys anywhere (Vercel) with no backend. Set NEXT_PUBLIC_API_BASE=http://127.0.0.1:8000 for the live API.
+const LIVE = process.env.NEXT_PUBLIC_API_BASE;
+export const STATIC = !LIVE;
+export const API_BASE = LIVE ?? "/data";
 
 export type Status = "pass" | "warn" | "fail";
 export type Pattern =
@@ -54,7 +58,7 @@ export interface Analysis {
   quality: { common_valid_pixel_fraction: number; aoi_area_ha: number; analysed_area_ha: number };
   summary: { n_candidates: number; total_candidate_area_ha: number; analysed_area_ha: number;
     common_valid_pixel_fraction: number };
-  aoi: Geometry; bounds_lonlat: [number, number, number, number];
+  aoi: Geometry; bounds_lonlat: [number, number, number, number]; tiles_maxzoom?: number;
   provenance: { code_version: string; created_utc: string };
   preprocessing: { radiometric_convention: string; scene_b_resampled: boolean };
   corroboration: { status: string };
@@ -72,7 +76,7 @@ export type CandidateProps = {
 };
 
 export async function api<T>(path: string): Promise<T> {
-  const r = await fetch(API_BASE + path, { cache: "no-store" });
+  const r = await fetch(API_BASE + path + (STATIC ? ".json" : ""), { cache: STATIC ? "force-cache" : "no-store" });
   if (!r.ok) throw new ApiError(r.status, `${r.status} ${path}`);
   return r.json();
 }

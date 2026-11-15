@@ -106,3 +106,8 @@ Newest last. Each entry: decision · why · source (when something we looked up 
     `analysis.context` into `context.json`; mean 76.4 mm between passes over 12 towns. Basemap: EOX Sentinel-2
     cloudless 2023 (CC BY-NC-SA 4.0). Colour composites are built per tile from the stored dB layers:
     R = HH, G = HV, B = HH − HV; change: R = A HH, G = B = B HH.
+34. **Static mode is the default** (2026-11-15). `analysis/export_static.py` freezes every JSON endpoint, all three
+    exports and WEBP tiles (zoom 7 to native: 12 at 50 m, 14 at 10 m; transparent tiles skipped) into
+    `frontend/public/data` (3,267 tiles, 66.8 MB). The frontend reads `/data<path>.json` unless
+    `NEXT_PUBLIC_API_BASE` is set, so Vercel serves the app with no backend. Verified with `pnpm build && pnpm start`
+    and the API stopped: no failed requests, no live-API calls.
