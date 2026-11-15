@@ -2,7 +2,9 @@
 
 import type { FeatureCollection } from "geojson";
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import Inspector, { StatusIcon } from "./Inspector";
+import { Logo } from "./Logo";
 import MapPanel, { MapSkeleton } from "./MapPanel";
 import { CompareView, InsightsView, MethodView, StoryView } from "./Views";
 import {
@@ -134,23 +136,10 @@ export default function Workspace() {
   );
 }
 
-function Logo() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden>
-      <rect width="28" height="28" rx="8" fill="#14213d" />
-      <path d="M5 17c3-5 6-5 9 0s6 5 9 0" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" />
-      <path d="M5 12c3-5 6-5 9 0s6 5 9 0" stroke="#8fb3d9" strokeWidth="1.8" fill="none" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function Sidebar({ view, setView, hasStory }: { view: View; setView: (v: View) => void; hasStory: boolean }) {
   return (
     <nav className="flex w-[208px] shrink-0 flex-col px-3 py-4" aria-label="Main">
-      <div className="flex items-center gap-2.5 px-2">
-        <Logo />
-        <span className="text-[17px] font-semibold tracking-tight">TerraTrace</span>
-      </div>
+      <Link href="/" className="px-2" title="Back to the TerraTrace home page"><Logo size={36} /></Link>
       <p className="mt-2 px-2 text-[12px] leading-snug text-muted">
         A platform for tracing and understanding changes across Earth&apos;s surface.
       </p>
@@ -158,10 +147,10 @@ function Sidebar({ view, setView, hasStory }: { view: View; setView: (v: View) =
         {NAV.filter((n) => n.id !== "story" || hasStory).map((n) => (
           <li key={n.id}>
             <button type="button" aria-current={view === n.id ? "page" : undefined} onClick={() => setView(n.id)}
-              className={`w-full rounded-lg px-2.5 py-2 text-left transition-colors duration-150
-                ${view === n.id ? "bg-card shadow-sm ring-1 ring-line" : "hover:bg-card/60"}`}>
-              <span className={`block text-[14px] font-medium ${view === n.id ? "text-ink" : "text-ink-2"}`}>{n.label}</span>
-              <span className="block text-[11px] text-muted">{n.hint}</span>
+              className={`w-full rounded-2xl px-3.5 py-2.5 text-left transition-colors duration-150
+                ${view === n.id ? "bg-brand shadow-sm" : "hover:bg-card"}`}>
+              <span className={`block text-[14px] font-semibold ${view === n.id ? "text-white" : "text-ink"}`}>{n.label}</span>
+              <span className={`block text-[11px] ${view === n.id ? "text-white/80" : "text-muted"}`}>{n.hint}</span>
             </button>
           </li>
         ))}
@@ -186,7 +175,7 @@ function TopBar({ analysis: a, list, onSwitch, onOpenQa }: {
   return (
     <header className="flex min-h-16 shrink-0 items-center gap-6 rounded-[var(--radius-card)] border border-line bg-card px-5 py-3">
       <div className="min-w-0">
-        <h1 className="truncate text-[20px] font-semibold tracking-tight">{a.area_name}</h1>
+        <h1 className="truncate font-display text-[22px] font-semibold tracking-[-0.03em]">{a.area_name}</h1>
         <label className="mt-0.5 flex items-center gap-1.5 text-[12px] text-muted">
           Analysis
           <select value={a.analysis_id} onChange={(e) => onSwitch(e.target.value)}

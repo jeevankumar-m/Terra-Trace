@@ -101,7 +101,7 @@ function Summary({ analysis: a, candidates, onSelect }: {
             across the {fmtHa(s.analysed_area_ha)} ha analysed. This is a valid result, not an error.
           </div>
         ) : (
-          <table className="tnum w-full text-[13px]">
+          <table className="tnum w-full whitespace-nowrap text-[13px]">
             <thead>
               <tr className="text-left text-[12px] text-muted">
                 {([["id", "ID"], [null, "Pattern"], ["ha", "Area"], ["level", "Evidence"]] as const).map(([k, l]) => (
@@ -201,7 +201,7 @@ function CandidateDetail({ analysis: a, id, onBack, flag }: { analysis: Analysis
       </div>
 
       <Section title="Channel evidence">
-        <table className="tnum w-full text-[13px]">
+        <table className="tnum w-full whitespace-nowrap text-[13px]">
           <thead>
             <tr className="text-right text-[12px] text-muted">
               <th className="pb-1.5 text-left font-medium">Channel</th>

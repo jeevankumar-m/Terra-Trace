@@ -2,18 +2,23 @@
 
 /* TerraTrace tokens: calm light canvas, one ink-blue accent, semantic colours only where they carry meaning. */
 @theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-poppins), var(--font-montserrat), ui-sans-serif, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   --color-canvas: #f6f7f9;
   --color-card: #ffffff;
   --color-line: #e6e8ec;
   --color-line-strong: #d3d7de;
-  --color-ink: #14213d;      /* primary text + brand accent (deep ink blue) */
-  --color-ink-2: #4a5263;    /* secondary text */
-  --color-muted: #5f6878;    /* labels (>= 4.5:1 on white) */
-  --color-accent: #1f4e79;
-  --color-accent-soft: #e9eff6;
+  --color-ink: #0e0e0e;      /* primary text */
+  --color-ink-2: #4b505a;    /* secondary text */
+  --color-muted: #666b75;    /* labels (>= 4.5:1 on white) */
+  --color-accent: #0175fe;   /* electric blue: links, active state, primary accent */
+  --color-accent-soft: #e8f1ff;
+  --color-brand: #0175fe;
+  --color-sun: #fac504;      /* sunflower: primary CTA */
+  --color-cream: #fff9e6;
+  --color-lavender: #d0befc;
 
   --color-pass: #127a3a;
   --color-pass-soft: #e5f4ea;
@@ -25,7 +30,7 @@
   --color-dec: #2166ac;      /* backscatter decrease (RdBu_r blue pole) */
   --color-inc: #b2182b;      /* backscatter increase (RdBu_r red pole) */
 
-  --radius-card: 14px;
+  --radius-card: 22px;
 }
 
 html, body { height: 100%; }
@@ -46,3 +51,7 @@ body {
 }
 .maplibregl-popup-tip { display: none; }
 .maplibregl-ctrl-scale { border-color: var(--color-ink-2); color: var(--color-ink-2); font-size: 11px; }
+
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }

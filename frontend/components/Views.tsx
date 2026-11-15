@@ -60,12 +60,12 @@ export function StoryView({ analysis, candidates, story, rain, flags }: {
         <div className="min-h-0 flex-1 overflow-y-auto p-6">
           {i === 0 && story.title && (
             <div className="mb-5 border-b border-line pb-5">
-              <h2 className="text-[24px] font-semibold leading-tight tracking-tight">{story.title}</h2>
+              <h2 className="text-[28px] font-semibold leading-[1.08] tracking-[-0.04em]">{story.title}</h2>
               <p className="mt-1.5 text-[13px] text-ink-2">{story.subtitle}</p>
             </div>
           )}
           <div className="label uppercase">{ch.kicker}</div>
-          <h3 className="mt-1 text-[22px] font-semibold leading-snug tracking-tight">{ch.title}</h3>
+          <h3 className="mt-1 text-[24px] font-semibold leading-tight tracking-[-0.03em]">{ch.title}</h3>
           {ch.body.map((p) => <p key={p.slice(0, 24)} className="mt-3 text-[14px] leading-relaxed text-ink-2">{p}</p>)}
           {ch.rain && rain && (
             <div className="mt-4 rounded-xl border border-line p-3">
@@ -97,7 +97,7 @@ export function StoryView({ analysis, candidates, story, rain, flags }: {
         </div>
         <footer className="flex items-center gap-3 border-t border-line px-6 py-3">
           <button type="button" onClick={() => go(-1)} disabled={i === 0}
-            className="h-9 rounded-lg border border-line px-3 text-[13px] font-medium hover:bg-canvas disabled:opacity-40">← Back</button>
+            className="h-10 rounded-full border border-line-strong px-4 text-[13px] font-bold hover:bg-canvas disabled:opacity-40">← Back</button>
           <div className="flex flex-1 justify-center gap-1.5">
             {story.chapters.map((c, j) => (
               <button key={c.id} type="button" aria-label={c.title} onClick={() => setI(j)}
@@ -105,7 +105,7 @@ export function StoryView({ analysis, candidates, story, rain, flags }: {
             ))}
           </div>
           <button type="button" onClick={() => go(1)} disabled={i === n - 1}
-            className="h-9 rounded-lg bg-ink px-4 text-[13px] font-medium text-white hover:bg-accent disabled:opacity-40">Next →</button>
+            className="h-10 rounded-full bg-sun px-5 text-[13px] font-bold text-ink hover:brightness-95 disabled:opacity-40">Next →</button>
         </footer>
       </article>
       <div className="relative min-w-0 flex-1 overflow-hidden rounded-[var(--radius-card)] border border-line bg-card">
@@ -174,16 +174,16 @@ export function CompareView({ analysis, story }: { analysis: Analysis; story: St
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3 rounded-[var(--radius-card)] border border-line bg-card px-4 py-2.5">
-        <div className="flex gap-0.5 rounded-lg bg-canvas p-0.5">
+        <div className="flex gap-0.5 rounded-full bg-canvas p-1">
           {MODES.filter((x) => analysis.tiles[x.a] && analysis.tiles[x.b]).map((x) => (
             <button key={x.id} type="button" aria-pressed={mode === x.id} onClick={() => setMode(x.id)}
-              className={`h-8 rounded-md px-3 text-[13px] font-medium ${mode === x.id ? "bg-card shadow-sm ring-1 ring-line" : "text-ink-2 hover:text-ink"}`}>{x.label}</button>
+              className={`h-8 rounded-full px-4 text-[13px] font-semibold ${mode === x.id ? "bg-brand text-white shadow-sm" : "text-ink-2 hover:text-ink"}`}>{x.label}</button>
           ))}
         </div>
         <div className="flex flex-wrap gap-1.5">
           {places.map((p, j) => (
             <button key={p.title} type="button" onClick={() => setPlace({ bounds: p.bounds, token: j + Date.now() })}
-              className="h-8 rounded-full border border-line px-3 text-[12px] font-medium text-ink-2 hover:bg-canvas hover:text-ink">{p.title}</button>
+              className="h-8 rounded-full border border-line-strong px-3.5 text-[12px] font-semibold text-ink hover:border-brand hover:text-brand">{p.title}</button>
           ))}
         </div>
       </div>
@@ -200,12 +200,12 @@ export function CompareView({ analysis, story }: { analysis: Analysis; story: St
             onPointerMove={(e) => e.buttons && drag(e)}
             className="absolute top-1/2 -left-5 flex h-10 w-10 -translate-y-1/2 cursor-ew-resize items-center justify-center rounded-full bg-white text-[15px] font-semibold text-ink shadow-lg ring-1 ring-line">⇆</button>
         </div>
-        <div className="pointer-events-none absolute left-3 top-3 rounded-lg bg-ink/85 px-3 py-1.5 text-[13px] font-semibold text-white">Before · {dateLabel(analysis.scene_a.start_utc)}</div>
-        <div className="pointer-events-none absolute right-3 top-3 rounded-lg bg-ink/85 px-3 py-1.5 text-[13px] font-semibold text-white">After · {dateLabel(analysis.scene_b?.start_utc)}</div>
+        <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-ink/85 px-4 py-1.5 text-[13px] font-bold text-white">Before · {dateLabel(analysis.scene_a.start_utc)}</div>
+        <div className="pointer-events-none absolute right-3 top-3 rounded-full bg-brand px-4 py-1.5 text-[13px] font-bold text-white">After · {dateLabel(analysis.scene_b?.start_utc)}</div>
         <MapKey layer={m.b} />
         <div className="absolute bottom-10 right-14 flex items-center gap-3 rounded-xl border border-line bg-card/95 px-3 py-2 shadow-sm">
           <button type="button" onClick={() => setPlaying(true)} disabled={playing}
-            className="h-8 rounded-lg bg-ink px-3 text-[13px] font-medium text-white hover:bg-accent disabled:opacity-50">▶ Play</button>
+            className="h-9 rounded-full bg-sun px-4 text-[13px] font-bold text-ink hover:brightness-95 disabled:opacity-50">▶ Play</button>
           <div className="tnum flex items-center gap-2 text-[12px]">
             <button type="button" onClick={() => setPos(100)} className="font-semibold hover:underline">{dateLabel(analysis.scene_a.start_utc)}</button>
             <input type="range" min={0} max={100} value={100 - pos} onChange={(e) => setPos(100 - +e.target.value)}
@@ -302,7 +302,7 @@ export function InsightsView({ analysis, candidates, rain, flags, onOpen }: {
           <p className="mt-2 text-[12px] text-muted">Grey bars sit inside the normal range. Blue and red tails are pixels that changed beyond the robust threshold.</p>
         </Card>
         <Card title="Largest change regions" className="xl:col-span-2">
-          <table className="tnum w-full text-[13px]">
+          <table className="tnum w-full whitespace-nowrap text-[13px]">
             <thead><tr className="text-left text-[12px] text-muted">
               <th className="pb-2 font-medium">Region</th><th className="pb-2 font-medium">Type</th><th className="pb-2 text-right font-medium">Area</th>
               <th className="pb-2 text-right font-medium">Direction</th><th className="pb-2 pl-6 font-medium">Evidence</th><th />

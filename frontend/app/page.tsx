@@ -1,5 +1,5 @@
-import Workspace from "@/components/Workspace";
+import Landing from "@/components/Landing";
 
 export default function Page() {
-  return <Workspace />;
+  return <Landing />;
 }
