@@ -82,3 +82,16 @@ Newest last. Each entry: decision · why · source (when something we looked up 
 27. **Bhoonidhi site bug (observed 2026-11-15):** `bhoonidhi/js/odap.js` has an unbalanced `)` near line 7759
     (`includes("WISP")) &&`). The script fails to parse, so login stops after sending the OTP, and the browse map is
     blank. Workaround: a Chrome DevTools Local Override of `odap.js` with that one `)` removed. See DATA_ACQUISITION §0.
+28. **First real S-band run (2026-11-15) facts:** EPSG:32644, 10 m posting, full frame 32400 × 33696, `numberOfLooks` ≈ 16,
+    convention string "Normalised Radar Backscatter (NRB)", and `validSamplesSubSwathMaskingApplied = False` (the same
+    mask semantics as the NASA sample, so the exception path is exercised on real ISRO data). Each file is about 11.4 GB.
+    Reads are windowed (512 × 512 gzip chunks), so memory stays small.
+29. **Multilook 5 × 5 on linear power (`MULTILOOK_WINDOW`), same for both dates, before dB.** At native 10 m the per-pixel
+    Δ MAD was 2.87 dB (HH) and 2.55 dB (HV). |z| ≥ 3 then needs about 13 dB of change, and only one candidate survived.
+    Measured on this pair: 3 × 3 gives MAD 1.65 / 1.16 dB; 5 × 5 gives 1.38 / 0.81 dB; 7 × 7 gives 1.28 / 0.66 dB.
+    5 × 5 (about 50 m effective) balances noise against the 1 ha MMU. The filter is valid-weighted, so invalid pixels
+    never leak. Geometry tests run with window 1.
+30. **AOI seaward edge digitised along the sand spit and the Point Calimere coast.** Open sea (62 % of the original box)
+    is excluded because it is low-SNR and wind-driven: ΔHH MAD stayed at 1.3 dB even at 7 × 7. AOI 53 512 ha,
+    100 % valid in both scenes. Result: 90 candidates, 283.6 ha. The largest are swamp regions with ΔHH −7 to −9 dB,
+    reported as response candidates only.

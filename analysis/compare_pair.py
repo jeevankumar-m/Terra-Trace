@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import rasterio
+from scipy import ndimage
 from rasterio.io import MemoryFile
 from rasterio.shutil import copy as rio_copy
 
@@ -22,17 +23,28 @@ def power_to_db(power: np.ndarray, valid: np.ndarray | None = None) -> np.ndarra
     return out
 
 
+def multilook(power: np.ndarray, valid: np.ndarray, n: int) -> np.ndarray:
+    """NxN boxcar mean of linear power over valid pixels only (invalid pixels never leak in). n <= 1: unchanged."""
+    if n <= 1:
+        return power
+    w = valid.astype(np.float32)
+    num = ndimage.uniform_filter(np.where(valid, power, 0).astype(np.float32), n, mode="constant")
+    den = ndimage.uniform_filter(w, n, mode="constant")
+    return np.where(valid & (den > 0), num / np.maximum(den, 1e-12), np.nan).astype(np.float32)
+
+
 def compute_layers(prep: dict) -> dict[str, np.ndarray]:
-    v = prep["valid"]
-    out = {"a_hh_db": power_to_db(prep["a"]["HHHH"], v)}
+    v, n = prep["valid"], config.MULTILOOK_WINDOW
+    db = lambda date, ch: power_to_db(multilook(prep[date][ch], v, n), v)
+    out = {"a_hh_db": db("a", "HHHH")}
     has_hv = "HVHV" in prep["a"]
     if has_hv:
-        out["a_hv_db"] = power_to_db(prep["a"]["HVHV"], v)
+        out["a_hv_db"] = db("a", "HVHV")
     if "b" in prep:
-        out["b_hh_db"] = power_to_db(prep["b"]["HHHH"], v)
+        out["b_hh_db"] = db("b", "HHHH")
         out["delta_hh_db"] = out["b_hh_db"] - out["a_hh_db"]
         if has_hv:
-            out["b_hv_db"] = power_to_db(prep["b"]["HVHV"], v)
+            out["b_hv_db"] = db("b", "HVHV")
             out["delta_hv_db"] = out["b_hv_db"] - out["a_hv_db"]
             out["delta_ratio_db"] = out["delta_hh_db"] - out["delta_hv_db"]  # change in HH/HV ratio, dB
     return out

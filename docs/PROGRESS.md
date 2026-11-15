@@ -36,13 +36,13 @@ Legend: ✅ done and verified · 🟡 done, not yet verified on real S-band data
 
 | Item | Status |
 |---|---|
-| Real S-band pair downloaded (Bhoonidhi) | ⬜ **Jeevan: follow docs/DATA_ACQUISITION.md** |
-| Real S-band analysis as default | ⬜ automatic once a passing real analysis exists |
+| Real S-band pair downloaded (Bhoonidhi) | ✅ 2026-10-06 → 2026-10-18, track 084 A frame 007 DHNA (DECISIONS 26) |
+| Real S-band analysis as default | ✅ `nagapattinam_20261006_20261018`: level A, 90 candidates, 283.6 ha; screenshots in `docs/screenshots/` |
 | NASA public sample (L-band, exploratory) | ✅ `make sample` |
 
 ## Next (phase 2, in order)
 
-1. Run the real Nagapattinam pair; verify the mask flag, posting and CRID on real S-band; tune MMU if needed.
+1. ✅ Real pair run; mask flag, posting and CRID verified; multilook + coastal AOI added (DECISIONS 28–30).
 2. ✅ Export (2026-11-15): `GET /api/analyses/{id}/export/{candidates.geojson|candidates.csv|report.html}` via `analysis/export.py`; Inspector "Export" section. Test: `test_exports`.
 3. Optional corroboration layer (water mask / optical context), never subtracted.
 4. Demo branch freeze, recording, static PNG fallback.

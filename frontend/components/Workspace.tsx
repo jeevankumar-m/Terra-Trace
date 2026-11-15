@@ -115,8 +115,6 @@ function Logo() {
 function Sidebar() {
   const nav = [
     { label: "Workspace", active: true, hint: "" },
-    { label: "Reports", active: false, hint: "Phase 2" },
-    { label: "Methods", active: false, hint: "Phase 2" },
   ];
   return (
     <nav className="flex w-[208px] shrink-0 flex-col px-3 py-4" aria-label="Main">

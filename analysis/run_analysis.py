@@ -117,6 +117,8 @@ def run(scene_a: str, scene_b: str | None, aoi_path: str, analysis_id: str, area
                  "rule": "|z_robust| >= k on dHH or dHV", "z_formula": "0.6745*(delta-median)/MAD",
                  "background_z": config.BACKGROUND_Z, "mmu_ha": config.MMU_HA,
                  "mmu_pixels": det["mmu_pixels"] if det else None, "connectivity": config.CONNECTIVITY,
+                 "multilook": f"{config.MULTILOOK_WINDOW}x{config.MULTILOOK_WINDOW} boxcar on linear power"
+                 if config.MULTILOOK_WINDOW > 1 else "none",
                  "speckle_filter": f"median {config.SPECKLE_FILTER_SIZE}x{config.SPECKLE_FILTER_SIZE}"
                  if config.SPECKLE_FILTER else "none"}
     background = {f"delta_{k}_db": {"median": round(v["median"], 4) if v["median"] is not None else None,

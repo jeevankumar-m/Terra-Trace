@@ -7,12 +7,55 @@
         "area_id": "nagapattinam_vedaranyam",
         "name": "Nagapattinam coast: Vedaranyam swamp and Point Calimere",
         "synthetic": false,
-        "status": "proposed",
-        "why": "Southern Cauvery delta coast in Nagapattinam district: tidal mudflats, the Great Vedaranyam Swamp, Point Calimere wetlands and adjoining agricultural fields. ISRO's NISAR S-band GCOV release shows a Nagapattinam scene (2 July 2026) with mangroves, fields, wetlands and coastal lagoons. PROPOSED analyst AOI: verify it lies inside the footprint of a passing scene pair and shrink it to that footprint before analysis."
+        "status": "verified",
+        "why": "Southern Cauvery delta coast in Nagapattinam district: farmland and settlements, the Great Vedaranyam Swamp, tidal mudflats and the Point Calimere wetlands. Inside the footprint of NISAR S-band track 084 A frame 007. The seaward edge follows the sand spit and the Point Calimere coast, digitised by the analyst from the 2026-10-06 HV image. Open sea is excluded because it is low-SNR and its backscatter changes with wind, not with the land surface."
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[79.55, 10.42], [79.90, 10.42], [79.90, 10.25], [79.55, 10.25], [79.55, 10.42]]]
+        "coordinates": [
+          [
+            [
+              79.55,
+              10.42
+            ],
+            [
+              79.868,
+              10.42
+            ],
+            [
+              79.87,
+              10.34
+            ],
+            [
+              79.878,
+              10.305
+            ],
+            [
+              79.86,
+              10.28
+            ],
+            [
+              79.82,
+              10.27
+            ],
+            [
+              79.73,
+              10.273
+            ],
+            [
+              79.64,
+              10.29
+            ],
+            [
+              79.55,
+              10.303
+            ],
+            [
+              79.55,
+              10.42
+            ]
+          ]
+        ]
       }
     }
   ]

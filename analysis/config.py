@@ -30,6 +30,8 @@ APPLY_GAMMA_TO_SIGMA = False   # keep gamma0 for both dates; True applies rtcGam
 # --- Candidate detection -----------------------------------------------------
 K_ROBUST = 3.0                 # |z_robust| >= K on dHH or dHV marks a candidate pixel
 MAD_CONSTANT = 0.6745          # z_robust = 0.6745 * (delta - median) / MAD
+MULTILOOK_WINDOW = 5           # spatial multilook: NxN valid-weighted boxcar mean of LINEAR power, same for both
+                               # dates, before dB (1 = off). Real S-band GCOV at 10 m: per-pixel delta MAD 2.9 dB -> 1.4/0.8 dB
 SPECKLE_FILTER = False         # optional 3x3 median on the z-score layers before thresholding
 SPECKLE_FILTER_SIZE = 3
 CONNECTIVITY = 8

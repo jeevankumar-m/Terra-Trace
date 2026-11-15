@@ -137,9 +137,9 @@ function Summary({ analysis: a, candidates, onSelect }: {
               <dd className="tnum">median {fmtDb(b.median)} · MAD {fmtDb(b.mad, false)}</dd>
             </Fragment>
           ))}
-          <dt className="text-muted">Filter</dt><dd>{a.threshold.speckle_filter}</dd>
+          <dt className="text-muted">Multilook</dt><dd>{a.threshold.multilook ?? "none"}</dd>
           <dt className="text-muted">Radiometry</dt><dd>{a.preprocessing.radiometric_convention}</dd>
-          <dt className="text-muted">Corroboration</dt><dd className="text-ink-2">Not available (phase 1)</dd>
+          <dt className="text-muted">Corroboration</dt><dd className="text-ink-2">Not available</dd>
         </dl>
       </Section>
 
@@ -243,7 +243,7 @@ function CandidateDetail({ analysis: a, id, onBack }: { analysis: Analysis; id: 
           <p className="rounded-lg bg-warn-soft px-3 py-2 text-[12px] font-medium text-warn">{c.interpretation_limit}.</p>
         </div>
         <div className="mt-3 flex items-center justify-between border-t border-line pt-2.5 text-[13px]">
-          <span className="text-muted">Corroboration</span><span className="text-ink-2">Not available (phase 1)</span>
+          <span className="text-muted">Corroboration</span><span className="text-ink-2">Not available</span>
         </div>
       </Section>
 

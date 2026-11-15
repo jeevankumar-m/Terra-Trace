@@ -31,8 +31,26 @@ def pair(tmp_path_factory):
 def result(pair, tmp_path_factory):
     a, b, aoi, _ = pair
     out = tmp_path_factory.mktemp("derived")
-    run(str(a), str(b), str(aoi), "t1", out_root=out, hash_files=False)
+    ml, config.MULTILOOK_WINDOW = config.MULTILOOK_WINDOW, 1  # pixel-exact geometry tests run unsmoothed
+    try:
+        run(str(a), str(b), str(aoi), "t1", out_root=out, hash_files=False)
+    finally:
+        config.MULTILOOK_WINDOW = ml
     return out / "t1"
+
+
+def test_multilook_keeps_invalid_out(pair, tmp_path):
+    from analysis.compare_pair import multilook
+    p = np.ones((9, 9), np.float32)
+    p[4, 4] = 1e6                       # huge value on an INVALID pixel must not leak into neighbours
+    v = np.ones((9, 9), bool)
+    v[4, 4] = False
+    out = multilook(p, v, 5)
+    assert np.isnan(out[4, 4]) and np.allclose(out[v], 1.0)
+    a, b, aoi, truth = pair             # default (multilooked) run still recovers every implanted change
+    m = run(str(a), str(b), str(aoi), "ml", out_root=tmp_path, hash_files=False)
+    assert m["threshold"]["multilook"].startswith(f"{config.MULTILOOK_WINDOW}x")
+    assert m["summary"]["n_candidates"] >= len([t for t in truth if t[-1]])  # 'tiny' is below MMU by design
 
 
 # --- dB math -------------------------------------------------------------------------------
@@ -240,8 +258,9 @@ def test_single_scene_is_level_c(pair, tmp_path):
 
 
 # --- reproducibility ------------------------------------------------------------------------------------------
-def test_reproducible(pair, result, tmp_path):
+def test_reproducible(pair, result, tmp_path, monkeypatch):
     a, b, aoi, _ = pair
+    monkeypatch.setattr(config, "MULTILOOK_WINDOW", 1)  # same settings as the `result` fixture
     run(str(a), str(b), str(aoi), "t1", out_root=tmp_path, hash_files=False)
     for f in ("metrics.json", "candidates.geojson", "pair_qa.json", "scene_a.json"):
         assert (tmp_path / "t1" / f).read_bytes() == (result / f).read_bytes(), f

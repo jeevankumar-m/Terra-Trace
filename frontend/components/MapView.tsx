@@ -83,7 +83,7 @@ export default function MapView(p: MapViewProps) {
         const hov = ["boolean", ["feature-state", "hover"], false];
         m.addLayer({ id: "cand-fill", type: "fill", source: "cand", paint: {
           "fill-color": patternColor,
-          "fill-opacity": ["case", sel, 0.22, hov, 0.2, 0.1] as unknown as number } });
+          "fill-opacity": ["case", sel, 0.1, hov, 0.12, 0.06] as unknown as number } });
         m.addLayer({ id: "cand-casing", type: "line", source: "cand", paint: {
           "line-color": "#14213d", "line-opacity": 0.55,
           "line-width": ["case", sel, 5, 2.75] as unknown as number } });

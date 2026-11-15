@@ -70,7 +70,7 @@ def report_html(m: dict, metrics: dict) -> bytes:
         for c in metrics["candidates"])
     qa = "".join(f"<li class={e(q['status'])}><b>{e(q['name'])}</b>: {e(q['reason'])}</li>"
                  for q in (m["pair_qa"] or {}).get("checks", []))
-    scene = lambda x: (f"<code>{e(x['scene_id'])}</code><br>{e(x['start_utc'])} UTC · {e(str(x['orbit_direction']))} · "
+    scene = lambda x: (f"<code>{e(x['scene_id'])}</code><br>{e(x['start_utc'][:16].replace('T', ' '))} UTC · {e(str(x['orbit_direction']))} · "
                        f"track {e(str(x['relative_track']))} · frame {e(str(x['frame']))}") if x else "—"
     doc = f"""<!doctype html><html lang=en><meta charset=utf-8><title>TerraTrace evidence report · {e(m['analysis_id'])}</title>
 <style>body{{font:14px/1.45 system-ui,sans-serif;color:#14213d;max-width:960px;margin:32px auto;padding:0 16px}}
@@ -84,7 +84,7 @@ code{{font-size:12px}}li.fail{{color:#b42318}}li.warn{{color:#8a5a00}}.muted{{co
 <tr><th>Pair QA</th><td>{'passed' if (m['pair_qa'] or {}).get('passed') else 'single scene, no pair' if not b else 'FAILED'} · fallback level {e(m['fallback_level'])}</td></tr></table>
 <h2>Summary</h2><table><tr><th>Candidates</th><td>{s['n_candidates']} ({s['total_candidate_area_ha']:.1f} ha)</td></tr>
 <tr><th>Analysed area</th><td>{s['analysed_area_ha']:.1f} ha of {s['aoi_area_ha']:.1f} ha AOI · common valid coverage {s['common_valid_pixel_fraction'] * 100:.1f}%</td></tr>
-<tr><th>Rule</th><td>|z<sub>robust</sub>| ≥ {m['threshold']['k']} on ΔHH or ΔHV, z = 0.6745·(Δ − median)/MAD · MMU {m['threshold']['mmu_ha']} ha</td></tr></table>
+<tr><th>Rule</th><td>|z<sub>robust</sub>| ≥ {m['threshold']['k']} on ΔHH or ΔHV, z = 0.6745·(Δ − median)/MAD · MMU {m['threshold']['mmu_ha']} ha · multilook {e(m['threshold'].get('multilook', 'none'))}</td></tr></table>
 <h2>Candidates</h2>{'<table><tr><th>ID</th><th>Pattern</th><th class=r>Area (ha)</th><th class=r>ΔHH</th><th class=r>ΔHV</th><th>Evidence</th><th>Centroid (lat, lon)</th></tr>' + rows + '</table>' if rows else '<p>Single-scene view (fallback level C): no temporal comparison, so no change candidates.</p>' if not b else '<p>No candidates above threshold and minimum mapping unit.</p>'}
 <h2>Pair checklist</h2><ul>{qa or '<li>Single-scene analysis: no pair checks.</li>'}</ul>
 <h2>What this does not prove</h2><p>Each region is a radar-response change candidate; the cause is not established.

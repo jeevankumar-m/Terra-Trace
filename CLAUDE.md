@@ -87,7 +87,7 @@ landscape's radar response has changed, and shows exactly why the system flagged
 - **Step C, dB** (`compare_pair.py`). `HH_dB = 10·log10(HHHH)` (**never 20·log10**). `ΔHH = HH_dB(B) − HH_dB(A)`,
   `ΔHV` likewise, `Δ(HH/HV) = ΔHH − ΔHV`. Positive = stronger on Date B. A delta is a measured difference, not a cause.
 - **Step D, candidates** (`detect_candidates.py`). Per delta: median and `MAD = median|Δ − median|` over valid pixels.
-  `z_robust = 0.6745·(Δ − median)/MAD` (relative anomaly score, **not a probability**). Candidate pixel:
+  dB layers come from 5×5 multilooked linear power (`MULTILOOK_WINDOW`). `z_robust = 0.6745·(Δ − median)/MAD` (relative anomaly score, **not a probability**). Candidate pixel:
   `|z| ≥ k` (k = 3.0) on ΔHH **or** ΔHV. Optional 3×3 median on z (off by default; unfiltered layers kept). 8-connected
   components. Drop components < MMU (1.0 ha, converted with the real pixel area). Polygonize, then EPSG:4326 for web;
   native CRS for area. IDs `C-001…` by area descending (ties: first pixel).
@@ -182,7 +182,7 @@ No `make` on Jeevan's Windows machine: use `powershell -ExecutionPolicy Bypass -
 | Task | Command |
 |---|---|
 | setup | `make setup` (venv + `pip install -r requirements.txt` + `pnpm install` in frontend) |
-| tests | `make test` (pytest, 26 tests) |
+| tests | `make test` (pytest, 27 tests) |
 | synthetic dev analysis | `make synthetic` |
 | NASA sample (exploratory) | `make sample` |
 | real pair gate | `.venv/Scripts/python -m analysis.catalog data/raw/<area> --aoi data/aoi/<area>.geojson` |
@@ -254,5 +254,8 @@ Never demo `synthetic_dev` or the NASA L-band sample as results. They exist for 
   structure (exploratory). **Blocking item: Jeevan downloads a real S-band pair** (docs/DATA_ACQUISITION.md), then
   `analysis.catalog` → `make analysis`. First real run: confirm `validSamplesSubSwathMaskingApplied`, real posting,
   CRID and background offset; record the findings in DECISIONS.
-- Proposed AOI `data/aoi/nagapattinam_vedaranyam.geojson` is `status: proposed`. Shrink it to the passing pair's footprint
+- 2026-11-15: **first real S-band analysis** `nagapattinam_20261006_20261018` (pair passed, level A, 90 candidates,
+  283.6 ha). 5×5 multilook on linear power (`MULTILOOK_WINDOW`), AOI clipped to the coast (open sea excluded).
+  See DECISIONS 26–30. Raw files (~11.4 GB each) in `data/raw/nagapattinam_vedaranyam/`.
+- (superseded) Proposed AOI `data/aoi/nagapattinam_vedaranyam.geojson` was `status: proposed`; now `verified`. Shrink it to the passing pair's footprint
   and mark it `verified` after the first real run.

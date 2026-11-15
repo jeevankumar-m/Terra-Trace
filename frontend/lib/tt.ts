@@ -49,7 +49,7 @@ export interface Analysis {
   fallback_level: "A" | "B" | "C" | null; exploratory: boolean; synthetic: boolean; data_label: string | null;
   method: string; scene_a: Scene; scene_b: Scene | null; pair_qa: PairQA | null;
   layers: Record<string, string>; legend: Record<string, LegendEntry>; tiles: Record<string, string>;
-  threshold: { k: number; mmu_ha: number; background_z: number; method: string; speckle_filter: string; rule: string };
+  threshold: { k: number; mmu_ha: number; background_z: number; method: string; speckle_filter: string; multilook?: string; rule: string };
   background: Record<string, { median: number | null; mad: number | null; n: number }>;
   quality: { common_valid_pixel_fraction: number; aoi_area_ha: number; analysed_area_ha: number };
   summary: { n_candidates: number; total_candidate_area_ha: number; analysed_area_ha: number;
