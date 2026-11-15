@@ -223,6 +223,142 @@ Data flow:
 6. The backend serves these files, or `export_static` freezes them into the frontend.
 7. The frontend renders the Story, Explore, Compare, Insights and Method views.
 
+### Architecture at a glance
+
+```mermaid
+flowchart TB
+  subgraph SRC["1 · Data sources"]
+    direction LR
+    A1["NISAR S-band L2-GCOV<br/>2 × HDF5, ~11 GB each<br/>(ISRO Bhoonidhi)"]
+    A2["Study-area polygon<br/>data/aoi/*.geojson"]
+    A3["Daily rainfall<br/>Open-Meteo · ERA5"]
+    A4["Guided story + analyst flags<br/>data/stories/*.json"]
+  end
+
+  subgraph PIPE["2 · Analysis pipeline · Python · analysis/"]
+    direction LR
+    P1["inspect_product<br/>read HDF5 · decode file name<br/>cross-check metadata · SHA-256"]
+    P2{{"validate_pair<br/>20-check pair QA gate"}}
+    P3["prepare_gcov<br/>AOI window · align grids<br/>joint valid mask · decimate"]
+    P4["compare_pair<br/>multilook · 10·log10 dB<br/>ΔHH · ΔHV · Δ(HH/HV)"]
+    P5["detect_candidates<br/>robust z-score · regions ≥ MMU"]
+    P6["summarize<br/>stats · pattern · evidence · limits"]
+    P7["context<br/>rainfall around both passes"]
+    P1 --> P2 -->|pass| P3 --> P4 --> P5 --> P6
+  end
+
+  subgraph OUT["3 · Analysis outputs · data/derived/{analysis_id}/"]
+    direction LR
+    O1["manifest.json · pair_qa.json<br/>scene_a/b.json"]
+    O2["cog/*.tif<br/>Cloud-Optimized GeoTIFFs"]
+    O3["candidates.geojson<br/>metrics.json"]
+    O4["context.json"]
+  end
+
+  subgraph SERVE["4 · Serving"]
+    direction LR
+    S1["FastAPI + rio-tiler<br/>live mode · on-demand tiles"]
+    S2["export_static<br/>JSON + WEBP tiles + exports<br/>→ frontend/public/data"]
+  end
+
+  subgraph WEB["5 · Web app · Next.js + MapLibre"]
+    direction LR
+    W0["Landing page /"]
+    W1["Story · Explore · Compare<br/>Insights · Method (/app)"]
+  end
+
+  A1 --> P1
+  A2 --> P3
+  A3 --> P7
+  P2 -.->|fail| X["Rejected with reasons<br/>no change computed"]
+  P4 --> O2
+  P6 --> O3
+  P2 --> O1
+  P7 --> O4
+  O1 & O2 & O3 & O4 --> S1
+  A4 --> S1
+  S1 --> S2
+  S2 -->|"static mode (default, Vercel)"| W1
+  S1 -.->|"live mode (NEXT_PUBLIC_API_BASE)"| W1
+  W0 --> W1
+```
+
+### Data processing, step by step
+
+```mermaid
+flowchart TD
+  A["Two NISAR GCOV HDF5 files<br/>/science/SSAR/GCOV/grids/frequencyA<br/>HHHH · HVHV · mask · numberOfLooks"] --> B["Read metadata only<br/>track · frame · direction · mode · POLE<br/>CRS · 10 m posting · masking flag"]
+  B --> C{{"Pair QA gate<br/>same band, product, track, frame,<br/>direction, bandwidth mode, polarization,<br/>CRS, overlap ≥ 50 %, Date B &gt; Date A"}}
+  C -- fail --> R["Reject: readable reasons<br/>no deltas, no candidates"]
+  C -- pass --> D["Window to the AOI on Scene A's grid<br/>windowed reads in 512 × 512 HDF5 chunks<br/>(whole delta: 5 × 5 block mean while reading → 50 m)"]
+  D --> E["Joint valid mask<br/>drop fill (255), non-finite and ≤ 0 power,<br/>pixels outside the AOI, open sea"]
+  E --> F["Multilook linear power<br/>valid-weighted 5 × 5 boxcar<br/>(speckle MAD 2.9 dB → 1.4 / 0.8 dB)"]
+  F --> G["Convert to dB<br/>dB = 10 · log10(γ⁰)"]
+  G --> H["Deltas<br/>ΔHH = HH_B − HH_A · ΔHV likewise<br/>Δ(HH/HV) = ΔHH − ΔHV"]
+  H --> I["Robust anomaly score<br/>z = 0.6745 · (Δ − median) / MAD"]
+  I --> J["Candidate pixels<br/>|z| ≥ 3 on ΔHH or ΔHV"]
+  J --> K["8-connected regions<br/>keep ≥ MMU (1 ha at 10 m · 5 ha at 50 m)<br/>area = pixels × real pixel area"]
+  K --> L["Per-region evidence<br/>medians A/B · Δ dB · valid neighbourhood<br/>compactness · pattern label · evidence level"]
+  L --> M["Interpretation<br/>plain-language sentence · what it does not prove<br/>analyst flags (e.g. RFI) · rainfall context"]
+  M --> N["Outputs<br/>COG layers · GeoJSON · CSV · HTML report · manifest"]
+```
+
+### Pair QA outcomes and fallback levels
+
+```mermaid
+flowchart LR
+  S["Scene A (+ Scene B)"] --> Q{"Is there a Scene B?"}
+  Q -- no --> C["Level C<br/>single-scene viewer<br/>no change claim"]
+  Q -- yes --> G{"Pair QA gate"}
+  G -- "track / frame / direction /<br/>mode / polarization mismatch" --> F["QA failed<br/>per-date layers only<br/>changes blocked"]
+  G -- "pass · HH and HV in both" --> A["Level A<br/>dual-pol change<br/>HH + HV evidence"]
+  G -- "pass · HH only in both" --> B["Level B<br/>single-pol change<br/>HV claims removed"]
+  F -. "--force-exploratory" .-> E["Exploratory<br/>everything labelled<br/>evidence LOW"]
+```
+
+### Pattern labels and evidence
+
+```mermaid
+flowchart TD
+  R["Candidate region<br/>median z_HH, median z_HV"] --> P{"Which channels exceed k = 3?"}
+  P -- "both, same sign" --> D["Dual-channel coherent change"]
+  P -- "both, opposite sign" --> AM["Ambiguous / mixed"]
+  P -- "HH ≥ k, |z_HV| &lt; 2" --> HH["HH-dominant change<br/>(smoother / wetter surface?)"]
+  P -- "HV ≥ k, |z_HH| &lt; 2" --> HV["HV-dominant change<br/>(vegetation volume?)"]
+  P -- otherwise --> AM
+  D & HH & HV & AM --> EV{"Evidence rules"}
+  EV --> E1["pair QA passed"]
+  EV --> E2["valid neighbourhood ≥ 90 %"]
+  EV --> E3["size ≥ 5 × MMU"]
+  EV --> E4["compactness ≥ 0.2"]
+  E1 & E2 & E3 & E4 --> LV["High / Medium / Low with reasons<br/>High reserved until independent corroboration"]
+```
+
+### Serving: static (default) and live
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Dev as Developer
+  participant Py as analysis.export_static
+  participant API as backend (FastAPI, in-process)
+  participant Pub as frontend/public/data
+  participant V as Vercel (static hosting)
+  participant U as Browser
+
+  Dev->>Py: python -m analysis.export_static
+  Py->>API: call every endpoint the app uses
+  API-->>Py: manifests · candidates · story · context · histograms · exports
+  Py->>API: render tiles z7 → native zoom (10 layers)
+  API-->>Py: PNG tiles (transparent ones skipped)
+  Py->>Pub: JSON + WEBP tiles + GeoJSON/CSV/HTML (~67 MB)
+  Dev->>V: git push → build (root dir: frontend)
+  U->>V: GET /app
+  V-->>U: prerendered page
+  U->>V: GET /data/api/analyses/... .json · /data/api/tiles/.../z/x/y.webp
+  V-->>U: static files (no backend, no compute)
+```
+
 ---
 
 ## Repository Structure
