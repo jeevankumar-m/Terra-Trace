@@ -76,9 +76,55 @@ The platform has two execution modes:
 ## Screenshots
 
 ### 1. Landing Page
-![Landing page](docs/screenshots/landing.png)
 
-"Clouds hid the rice bowl. Radar didn't." The hero capsules show a Sentinel-2 view of the delta, the NISAR colour radar composite and the radar change map. Below it: a bento grid, features, findings, the five-step process and data credits.
+The public front door at `/`, which explains the project in 30 seconds. The full page is collapsed below, followed by each section.
+
+<details>
+<summary><b>View the entire landing page (full length)</b></summary>
+
+![Landing page, full length](docs/screenshots/landing-full.png)
+
+</details>
+
+#### 1a. Hero
+![Landing hero](docs/screenshots/landing-1-hero.png)
+
+"Clouds hid the rice bowl. Radar didn't." The three image capsules are real data: a Sentinel-2 view of the delta, the NISAR S-band colour radar composite, and the radar change map (red = darker after the rain).
+
+#### 1b. Bento Grid
+![Landing bento grid](docs/screenshots/landing-2-bento.png)
+
+Quick entry points (start the story, swipe the dates), the app itself, NASA's NISAR spacecraft, 76 mm of rain between the passes, spinning badges and who the tool is for.
+
+#### 1c. Features
+![Landing features](docs/screenshots/landing-3-features.png)
+
+"Built to read radar. Designed to explain it.": the guided story, before/after swipe, insights, evidence, and honesty by design.
+
+#### 1d. What the Radar Found
+![Landing findings](docs/screenshots/landing-4-findings.png)
+
+Five findings, each with a real crop from the analysis: dark paddies, the Vedaranyam swamp, wetter uplands, the interference we caught, and the rain.
+
+#### 1e. Marquee
+![Landing marquee](docs/screenshots/landing-5-marquee.png)
+
+"Through cloud ✦ Day or night ✦ Every 12 days", the reason radar matters during the monsoon.
+
+#### 1f. Take the Radar's Word
+![Landing facts](docs/screenshots/landing-6-facts.png)
+
+Three rotating facts taken straight from the data (Thiruvarur rainfall, the swamp's 6 dB drop, the flagged interference), with progress bars and Next/Pause controls.
+
+#### 1g. The Same Five Steps
+![Landing process](docs/screenshots/landing-7-process.png)
+
+Gate → Align → Measure → Explain → Share as expanding cards, each listing the question it answers and what you get.
+
+#### 1h. Footer
+![Landing footer](docs/screenshots/landing-8-footer.png)
+
+"Good data deserves a clear story.", with app links, Team Dhruva / NASA Space Apps 2026, and full data credits.
 
 ---
 
