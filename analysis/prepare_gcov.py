@@ -51,6 +51,41 @@ def _window(t: Affine, shape_, geom) -> tuple[int, int, int, int]:
     return r0, r1, c0, c1
 
 
+class Decimated:
+    """Scene adapter on an n-times coarser grid: power = mean of the valid (finite, > 0) linear-power samples in each
+    n x n block (spatial multilook while reading), mask = block-centre code. Lets a whole delta run at 50 m in small
+    memory. Everything downstream (QA, prep, dB, detection) is unchanged and sees the coarse transform."""
+
+    STRIP = 512  # rows of the full-res grid read at a time (matches the 512 x 512 HDF5 chunks)
+
+    def __init__(self, scene, n: int):
+        self.scene, self.n = scene, n
+        self.transform = scene.transform * Affine.scale(n)
+        self.shape = (scene.shape[0] // n, scene.shape[1] // n)
+
+    def __getattr__(self, k):  # crs, meta, ... come from the wrapped scene
+        return getattr(self.scene, k)
+
+    def read(self, layer: str, win=None):
+        n = self.n
+        r0, r1, c0, c1 = win if win else (0, self.shape[0], 0, self.shape[1])
+        out = np.empty((r1 - r0, c1 - c0), np.float32 if layer != "mask" else np.uint8)
+        step = max(1, self.STRIP // n)
+        for i in range(r0, r1, step):
+            j = min(r1, i + step)
+            blk = self.scene.read(layer, (i * n, j * n, c0 * n, c1 * n))
+            blk = blk.reshape(j - i, n, c1 - c0, n)
+            if layer == "mask":
+                out[i - r0:j - r0] = blk[:, n // 2, :, n // 2]
+            else:
+                b = blk.astype(np.float32)
+                ok = np.isfinite(b) & (b > 0)
+                cnt = ok.sum(axis=(1, 3))
+                sm = np.where(ok, b, 0).sum(axis=(1, 3))
+                out[i - r0:j - r0] = np.where(cnt > 0, sm / np.maximum(cnt, 1), np.nan)
+        return out
+
+
 def zero_is_invalid(scene) -> bool:
     """Mask code 0 means 'invalid' only when the product applied sub-swath validity masking.
     If the product says validSamplesSubSwathMaskingApplied=False, 0 carries no validity information."""

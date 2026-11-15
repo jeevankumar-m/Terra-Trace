@@ -142,7 +142,10 @@ export const LEVEL_STYLE: Record<Level, string> = {
   LOW: "bg-white text-ink-2 ring-1 ring-inset ring-line-strong",
 };
 
-export const LAYERS: { key: string; label: string; group: "HH" | "HV" | "Other" }[] = [
+export const LAYERS: { key: string; label: string; group: "Colour" | "HH" | "HV" | "Other" }[] = [
+  { key: "rgb_a", label: "Date A", group: "Colour" },
+  { key: "rgb_b", label: "Date B", group: "Colour" },
+  { key: "change_hh", label: "Change", group: "Colour" },
   { key: "a_hh_db", label: "Date A", group: "HH" },
   { key: "b_hh_db", label: "Date B", group: "HH" },
   { key: "delta_hh_db", label: "ΔHH", group: "HH" },
@@ -156,11 +159,47 @@ export const LAYER_TITLE: Record<string, string> = {
   a_hh_db: "Date A HH backscatter", b_hh_db: "Date B HH backscatter", delta_hh_db: "ΔHH (Date B − Date A)",
   a_hv_db: "Date A HV backscatter", b_hv_db: "Date B HV backscatter", delta_hv_db: "ΔHV (Date B − Date A)",
   delta_ratio_db: "Δ(HH/HV) ratio change", valid_mask: "Valid-data mask",
+  rgb_a: "Date A colour composite", rgb_b: "Date B colour composite", change_hh: "HH change composite",
+};
+export const COMPOSITE_KEY: Record<string, { swatch: string; text: string }[]> = {
+  rgb_a: [{ swatch: "#e04040", text: "Red: HH (rough ground, buildings)" }, { swatch: "#40c040", text: "Green: HV (vegetation volume)" },
+    { swatch: "#4060e0", text: "Blue: HH/HV ratio" }, { swatch: "#000", text: "Black: smooth water" }],
+  change_hh: [{ swatch: "#d03030", text: "Red: darker on Date B (e.g. standing water)" },
+    { swatch: "#30d0d0", text: "Cyan: brighter on Date B (e.g. wetter soil)" }, { swatch: "#9a9a9a", text: "Grey: little change" }],
+};
+COMPOSITE_KEY.rgb_b = COMPOSITE_KEY.rgb_a;
+
+// ---- story + ancillary context (precomputed server-side) -----------------------------------------
+export interface Chapter {
+  id: string; kicker: string; title: string; body: string[]; hypothesis?: string; caveat?: string;
+  layer: string; bounds: [number, number, number, number]; candidate?: string; rain?: boolean;
+}
+export interface Story { title?: string; subtitle?: string; chapters: Chapter[]; flags?: { ids: string[]; label: string; note: string }[] }
+export interface RainTown { name: string; lon: number; lat: number; mm_between_passes: number; days: string[]; mm: number[] }
+export interface Rainfall { source: string; date_a: string; date_b: string; mean_mm_between_passes: number; towns: RainTown[] }
+export type Flag = { label: string; note: string };
+export const flagMap = (s: Story | null): Record<string, Flag> =>
+  Object.fromEntries((s?.flags ?? []).flatMap((f) => f.ids.map((id) => [id, { label: f.label, note: f.note }])));
+
+// Free colour basemap: Sentinel-2 cloudless 2023 by EOX (CC BY-NC-SA 4.0) + EOX label overlay.
+export const SAT_STYLE: import("maplibre-gl").StyleSpecification = {
+  version: 8,
+  sources: {
+    s2: { type: "raster", tileSize: 256, maxzoom: 15, tiles: ["https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg"],
+      attribution: "Sentinel-2 cloudless 2023 by <a href=\"https://s2maps.eu\">EOX</a> (modified Copernicus Sentinel data)" },
+    labels: { type: "raster", tileSize: 256, maxzoom: 15, tiles: ["https://tiles.maps.eox.at/wmts/1.0.0/overlay_bright_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.png"],
+      attribution: "Labels © OpenStreetMap contributors, EOX" },
+  },
+  layers: [
+    { id: "bg", type: "background", paint: { "background-color": "#1d2733" } },
+    { id: "s2", type: "raster", source: "s2" },
+    { id: "labels", type: "raster", source: "labels" },
+  ],
 };
 
 /** Why a layer is unavailable, from the manifest only (never hard-coded per analysis). */
 export function layerBlockedReason(a: Analysis, key: string): string | null {
-  if (a.layers[key]) return null;
+  if (a.layers[key] || a.tiles?.[key]) return null;
   if (a.fallback_level === "C") return "Single scene (level C): no Date B or temporal change";
   if (key.includes("hv") || key === "delta_ratio_db") {
     if (!a.scene_a.has_hv || (a.scene_b && !a.scene_b.has_hv)) return "HV not available in both scenes (level B)";

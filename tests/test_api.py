@@ -27,7 +27,7 @@ def test_endpoints(client):
     assert lst["default_analysis_id"] == "synthetic_dev"
     m = client.get("/api/analyses/synthetic_dev").json()
     assert m["synthetic"] and m["method"] == "paired_gcov_temporal_backscatter_v1"
-    assert set(m["tiles"]) == set(m["layers"])
+    assert set(m["layers"]) <= set(m["tiles"])  # plus colour composites
     fc = client.get("/api/analyses/synthetic_dev/candidates").json()
     cid = fc["features"][0]["properties"]["candidate_id"]
     c = client.get(f"/api/candidates/synthetic_dev/{cid}").json()
@@ -43,6 +43,23 @@ def test_exports(client):
     rep = client.get("/api/analyses/synthetic_dev/export/report.html").text
     assert "SYNTHETIC DEV DATA" in rep and "cause is not established" in rep
     assert client.get("/api/analyses/synthetic_dev/export/x.exe").status_code == 404
+
+
+def test_composites_story_context_histogram(client):
+    m = client.get("/api/analyses/synthetic_dev").json()
+    assert {"rgb_a", "rgb_b", "change_hh"} <= set(m["tiles"])
+    lon = (m["bounds_lonlat"][0] + m["bounds_lonlat"][2]) / 2
+    lat = (m["bounds_lonlat"][1] + m["bounds_lonlat"][3]) / 2
+    import morecantile
+    t = morecantile.tms.get("WebMercatorQuad").tile(lon, lat, 12)
+    for k in ("rgb_a", "change_hh"):
+        r = client.get(f"/api/tiles/synthetic_dev/{k}/12/{t.x}/{t.y}.png")
+        assert r.status_code == 200 and r.content[:4] == bytes.fromhex("89504e47")
+    assert client.get("/api/analyses/synthetic_dev/story").json()["chapters"] == []
+    assert client.get("/api/analyses/synthetic_dev/context").json()["rainfall"] is None
+    h = client.get("/api/analyses/synthetic_dev/histogram/delta_hh_db").json()
+    assert len(h["edges"]) == len(h["counts"]) + 1 and sum(h["counts"]) > 0
+    assert client.get("/api/analyses/synthetic_dev/histogram/a_hh_db").status_code == 404
 
 
 def test_tiles_and_errors(client):

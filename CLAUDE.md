@@ -182,7 +182,7 @@ No `make` on Jeevan's Windows machine: use `powershell -ExecutionPolicy Bypass -
 | Task | Command |
 |---|---|
 | setup | `make setup` (venv + `pip install -r requirements.txt` + `pnpm install` in frontend) |
-| tests | `make test` (pytest, 27 tests) |
+| tests | `make test` (pytest, 28 tests) |
 | synthetic dev analysis | `make synthetic` |
 | NASA sample (exploratory) | `make sample` |
 | real pair gate | `.venv/Scripts/python -m analysis.catalog data/raw/<area> --aoi data/aoi/<area>.geojson` |
@@ -257,5 +257,9 @@ Never demo `synthetic_dev` or the NASA L-band sample as results. They exist for 
 - 2026-11-15: **first real S-band analysis** `nagapattinam_20261006_20261018` (pair passed, level A, 90 candidates,
   283.6 ha). 5×5 multilook on linear power (`MULTILOOK_WINDOW`), AOI clipped to the coast (open sea excluded).
   See DECISIONS 26–30. Raw files (~11.4 GB each) in `data/raw/nagapattinam_vedaranyam/`.
+- 2026-11-15 (later): **app has 5 views**: Story (guided chapters from `data/stories/<id>.json`), Explore, Compare
+  (before/after swipe and play), Insights (rain, area by type, histograms, top regions) and Method. Default analysis
+  `cauvery_delta_20261006_20261018` (whole delta, 50 m via `--decimate 5`). Satellite basemap (EOX). Colour
+  composites `rgb_a/rgb_b/change_hh` are built per tile. `analysis.context` writes the rainfall. RFI flags: DECISIONS 32.
 - (superseded) Proposed AOI `data/aoi/nagapattinam_vedaranyam.geojson` was `status: proposed`; now `verified`. Shrink it to the passing pair's footprint
   and mark it `verified` after the first real run.

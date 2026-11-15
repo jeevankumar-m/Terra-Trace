@@ -100,8 +100,58 @@ def analyses():
 @app.get("/api/analyses/{analysis_id}", response_model=S.Analysis)
 def analysis(analysis_id: str):
     m = _manifest(analysis_id)
-    m["tiles"] = {k: f"/api/tiles/{analysis_id}/{k}/{{z}}/{{x}}/{{y}}.png" for k in m["layers"]}
+    m["tiles"] = {k: f"/api/tiles/{analysis_id}/{k}/{{z}}/{{x}}/{{y}}.png" for k in [*m["layers"], *_virtual(m)]}
     return m
+
+
+# Colour composites built per tile from the stored dB layers (nothing new is computed or stored).
+#   rgb_a / rgb_b: dual-pol false colour, R = HH, G = HV, B = HH/HV ratio (surface vs volume scattering).
+#   change_hh: R = Date A HH, G = B = Date B HH -> red where the surface got darker, cyan where it got brighter.
+VIRTUAL = {"rgb_a": ("a_hh_db", "a_hv_db"), "rgb_b": ("b_hh_db", "b_hv_db"), "change_hh": ("a_hh_db", "b_hh_db")}
+RATIO_DB = (2.0, 14.0)
+
+
+def _virtual(m: dict) -> list[str]:
+    return [k for k, need in VIRTUAL.items() if all(n in m["layers"] for n in need)]
+
+
+def _story_path(analysis_id: str) -> Path:
+    return DATA / "stories" / f"{analysis_id}.json"
+
+
+@app.get("/api/analyses/{analysis_id}/context")
+def context(analysis_id: str):
+    """Ancillary context precomputed by analysis.context (rainfall between the passes)."""
+    _manifest(analysis_id)
+    p = DERIVED / analysis_id / "context.json"
+    return _read(p) if p.exists() else {"rainfall": None}
+
+
+@app.get("/api/analyses/{analysis_id}/story")
+def story(analysis_id: str):
+    _manifest(analysis_id)
+    p = _story_path(analysis_id)
+    return _read(p) if p.exists() else {"chapters": []}
+
+
+@lru_cache(maxsize=16)
+def _hist(analysis_id: str, layer: str, created: str):
+    m = _manifest(analysis_id)
+    with Reader(str(DERIVED / analysis_id / m["layers"][layer])) as r:
+        img = r.preview(max_size=1024)  # overview read: fast and plenty for a histogram
+    v = img.array[0].compressed() if np.ma.isMaskedArray(img.array) else img.data[0].ravel()
+    v = v[np.isfinite(v)]
+    edges = np.arange(-12, 12.01, 0.5)
+    counts, _ = np.histogram(np.clip(v, -12, 12), edges)
+    return {"edges": edges.round(2).tolist(), "counts": counts.tolist(), "median": float(np.median(v)) if v.size else None}
+
+
+@app.get("/api/analyses/{analysis_id}/histogram/{layer}")
+def histogram(analysis_id: str, layer: str):
+    m = _manifest(analysis_id)
+    if layer not in m["layers"] or not layer.startswith("delta_"):
+        raise HTTPException(404, f"no delta layer '{layer}' in '{analysis_id}'")
+    return _hist(analysis_id, layer, m["provenance"]["created_utc"])
 
 
 @app.get("/api/analyses/{analysis_id}/candidates", response_model=S.FeatureCollection)
@@ -155,10 +205,12 @@ def _blank() -> bytes:
          responses={200: {"content": {"image/png": {}}}})
 def tile(analysis_id: str, layer: str, z: int, x: int, y: int):
     m = _manifest(analysis_id)
+    headers = {"Cache-Control": "public, max-age=600"}
+    if layer in _virtual(m):
+        return _composite(analysis_id, m, layer, z, x, y, headers)
     if layer not in m["layers"]:
         raise HTTPException(404, f"layer '{layer}' not available in '{analysis_id}'")
     lg = m["legend"][layer]
-    headers = {"Cache-Control": "public, max-age=600"}
     try:
         with Reader(str(DERIVED / analysis_id / m["layers"][layer])) as r:
             img = r.tile(x, y, z, tilesize=256)
@@ -170,3 +222,27 @@ def tile(analysis_id: str, layer: str, z: int, x: int, y: int):
         img = img.rescale(in_range=((lg["min"], lg["max"]),))
         png = img.render(img_format="PNG", colormap=cmap.get(lg["colormap"]))
     return Response(png, media_type="image/png", headers=headers)
+
+
+def _composite(analysis_id: str, m: dict, layer: str, z: int, x: int, y: int, headers: dict) -> Response:
+    from rio_tiler.models import ImageData
+
+    def read(k):
+        with Reader(str(DERIVED / analysis_id / m["layers"][k])) as r:
+            return r.tile(x, y, z, tilesize=256).array[0]
+
+    def scale(a, lo, hi):
+        return np.ma.clip((a - lo) / (hi - lo) * 255, 0, 255)
+
+    try:
+        p, q = (read(k) for k in VIRTUAL[layer])
+    except TileOutsideBounds:
+        return Response(_blank(), media_type="image/png", headers=headers)
+    lp, lq = m["legend"][VIRTUAL[layer][0]], m["legend"][VIRTUAL[layer][1]]
+    if layer == "change_hh":
+        bands = [scale(p, lp["min"], lp["max"]), scale(q, lp["min"], lp["max"]), scale(q, lp["min"], lp["max"])]
+    else:
+        bands = [scale(p, lp["min"], lp["max"]), scale(q, lq["min"], lq["max"]), scale(p - q, *RATIO_DB)]
+    mask = np.ma.getmaskarray(p) | np.ma.getmaskarray(q)
+    arr = np.ma.array(np.stack([np.ma.filled(b, 0) for b in bands]).astype("uint8"), mask=np.stack([mask] * 3))
+    return Response(ImageData(arr).render(img_format="PNG"), media_type="image/png", headers=headers)

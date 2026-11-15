@@ -58,7 +58,7 @@ def _channel_reason(name, z, d):
 
 
 def evidence(pair_passed: bool, exploratory: bool, pattern: str, z_hh, z_hv, d_hh, d_hv,
-             neigh_valid: float, area_ha: float, compactness: float) -> tuple[str, list[dict]]:
+             neigh_valid: float, area_ha: float, compactness: float, mmu_ha: float = config.MMU_HA) -> tuple[str, list[dict]]:
     reasons = []
     reasons.append({"status": "pass", "text": "Pair passed same-track / mode / polarization checks"} if pair_passed
                    else {"status": "fail", "text": "Pair failed QA: exploratory result only"})
@@ -75,10 +75,10 @@ def evidence(pair_passed: bool, exploratory: bool, pattern: str, z_hh, z_hv, d_h
     reasons.append({"status": "pass" if q_ok else "warn",
                     "text": f"{neigh_valid:.1%} of pixels around the region are valid"
                     + ("" if q_ok else " (borders masked or missing data)")})
-    big = area_ha >= config.EVIDENCE_STRONG_SIZE_MMU * config.MMU_HA
+    big = area_ha >= config.EVIDENCE_STRONG_SIZE_MMU * mmu_ha
     reasons.append({"status": "pass" if big else "warn",
                     "text": f"Region size {area_ha:.1f} ha" + (f" (≥ {config.EVIDENCE_STRONG_SIZE_MMU:g}× MMU)" if big
-                                                              else f" (close to the {config.MMU_HA:g} ha MMU)")})
+                                                              else f" (close to the {mmu_ha:g} ha MMU)")})
     compact = compactness >= config.EVIDENCE_MIN_COMPACTNESS
     reasons.append({"status": "pass" if compact else "warn",
                     "text": f"Compactness {compactness:.2f}" + (" (spatially coherent)" if compact
@@ -133,13 +133,13 @@ def summarize(det: dict, layers: dict, valid: np.ndarray, pixel_area_m2: float, 
         compactness = 4 * math.pi * filled.area / filled.length ** 2 if filled.length else 0.0
         fill_fraction = (reg["pixel_count"] * pixel_area_m2) / filled.area if filled.area else 0.0
         lvl, reasons = evidence(pair_passed, exploratory, pat, z_hh, z_hv, st["delta_hh_median_db"],
-                                st.get("delta_hv_median_db"), neigh_valid, area_ha, compactness)
+                                st.get("delta_hv_median_db"), neigh_valid, area_ha, compactness, mmu_ha=det["mmu_ha"])
         dom = st.get("delta_hv_median_db") if pat == "HV_DOMINANT_CHANGE" else st["delta_hh_median_db"]
         direction = "mixed" if pat == "AMBIGUOUS_MIXED" else ("increase" if dom > 0 else "decrease")
         g4326 = to_crs(g, 4326, src=epsg)
         # Web outline: holes smaller than the MMU (speckle gaps) are closed for legibility.
         # area_ha, centroid and bbox above are computed from the exact pixel region.
-        display = to_crs(_close_small_holes(g, config.MMU_HA * 1e4), 4326, src=epsg)
+        display = to_crs(_close_small_holes(g, det["mmu_ha"] * 1e4), 4326, src=epsg)
         c = to_crs(g.centroid, 4326, src=epsg)
         with np.errstate(invalid="ignore"):
             frac = {f"{ch}_exceeding_fraction": _r(float((np.abs(det['z'][ch][win][sel]) >= det['k']).mean()), 4)

@@ -33,8 +33,8 @@ def multilook(power: np.ndarray, valid: np.ndarray, n: int) -> np.ndarray:
     return np.where(valid & (den > 0), num / np.maximum(den, 1e-12), np.nan).astype(np.float32)
 
 
-def compute_layers(prep: dict) -> dict[str, np.ndarray]:
-    v, n = prep["valid"], config.MULTILOOK_WINDOW
+def compute_layers(prep: dict, n: int | None = None) -> dict[str, np.ndarray]:
+    v, n = prep["valid"], config.MULTILOOK_WINDOW if n is None else n
     db = lambda date, ch: power_to_db(multilook(prep[date][ch], v, n), v)
     out = {"a_hh_db": db("a", "HHHH")}
     has_hv = "HVHV" in prep["a"]

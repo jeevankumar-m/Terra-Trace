@@ -1,0 +1,19 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "cauvery_delta",
+        "name": "Cauvery delta, Tamil Nadu",
+        "synthetic": false,
+        "status": "verified",
+        "why": "India's 'rice bowl' (Thanjavur, Thiruvarur, Nagapattinam, Mayiladuthurai, Karaikal, Vedaranyam). The northeast monsoon usually starts in mid-October and brings the year's main rain and flood risk. Inside NISAR S-band track 084 A frame 007. The seaward edge follows the coast; open sea is excluded (low SNR, wind-driven)."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[79.00,11.35],[79.82,11.35],[79.86,11.14],[79.86,10.77],[79.865,10.40],[79.870,10.305],[79.80,10.275],[79.65,10.29],[79.45,10.33],[79.30,10.36],[79.00,10.55],[78.95,10.80],[79.00,11.35]]]
+      }
+    }
+  ]
+}

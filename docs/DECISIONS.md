@@ -95,3 +95,14 @@ Newest last. Each entry: decision · why · source (when something we looked up 
     is excluded because it is low-SNR and wind-driven: ΔHH MAD stayed at 1.3 dB even at 7 × 7. AOI 53 512 ha,
     100 % valid in both scenes. Result: 90 candidates, 283.6 ha. The largest are swamp regions with ΔHH −7 to −9 dB,
     reported as response candidates only.
+31. **Delta-wide run `cauvery_delta_20261006_20261018`** (2026-11-15): same two frames, AOI = the Cauvery delta land
+    (10,506 km²), read with `--decimate 5` (5 × 5 block mean of linear power while reading = 50 m pixels, constant
+    memory) and `--mmu-ha 5`. Result: 392 regions, 8,608 ha. Background ΔHH +0.97 ± 1.15 dB.
+32. **Analyst RFI flags** (`data/stories/<id>.json` → `flags`). Diffuse oval HV glows near Thanjavur move between dates:
+    a glow on 2026-10-06 near 10.60 N, a bigger one on 2026-10-18 near 10.75 N. There is no field structure. The 31
+    HV-dominant regions inside them (3,762 ha) are flagged as likely RFI, shown dashed with a warning, and excluded
+    from the Insights totals. This is visual review, not an automatic rule. An automatic RFI screen is future work.
+33. **Context:** rainfall from the Open-Meteo archive (ERA5 reanalysis, CC BY 4.0), precomputed by
+    `analysis.context` into `context.json`; mean 76.4 mm between passes over 12 towns. Basemap: EOX Sentinel-2
+    cloudless 2023 (CC BY-NC-SA 4.0). Colour composites are built per tile from the stored dB layers:
+    R = HH, G = HV, B = HH − HV; change: R = A HH, G = B = B HH.

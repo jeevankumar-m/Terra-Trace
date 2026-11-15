@@ -4,7 +4,7 @@ import type { FeatureCollection } from "geojson";
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import {
-  LAYERS, LAYER_TITLE, PATTERNS, fmtDb, layerBlockedReason, type Analysis, type CandidateProps, type Pattern,
+  COMPOSITE_KEY, LAYERS, LAYER_TITLE, PATTERNS, fmtDb, layerBlockedReason, type Analysis, type CandidateProps, type Pattern,
 } from "@/lib/tt";
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false, loading: () => <MapSkeleton /> });
@@ -40,9 +40,9 @@ export default function MapPanel({ analysis, candidates, layer, setLayer, select
       <div className="pointer-events-none absolute left-3 top-3 flex w-[300px] flex-col gap-2">
         <div className="pointer-events-auto rounded-xl border border-line bg-card/95 p-3 shadow-sm backdrop-blur-sm">
           <div className="label mb-2">Layer</div>
-          {(["HH", "HV", "Other"] as const).map((g) => (
+          {(["Colour", "HH", "HV", "Other"] as const).map((g) => (
             <div key={g} className="mb-1.5 flex items-center gap-2 last:mb-0">
-              <span className="w-9 shrink-0 text-[12px] font-medium text-muted">{g === "Other" ? "" : g}</span>
+              <span className="w-11 shrink-0 text-[12px] font-medium text-muted">{g === "Other" ? "" : g}</span>
               <div className="grid flex-1 grid-cols-3 gap-0.5 rounded-lg bg-canvas p-0.5"
                 style={{ gridTemplateColumns: g === "Other" ? "1fr 1fr" : undefined }}>
                 {LAYERS.filter((l) => l.group === g).map((l) => {
@@ -95,6 +95,15 @@ function Legend({ analysis, layer, candidates, showCandidates }: {
   return (
     <div className="absolute bottom-10 left-3 w-[300px] rounded-xl border border-line bg-card/95 p-3 shadow-sm backdrop-blur-sm">
       <div className="text-[13px] font-semibold">{LAYER_TITLE[layer]}</div>
+      {COMPOSITE_KEY[layer] && (
+        <ul className="mt-2 space-y-1 text-[12px] text-ink-2">
+          {COMPOSITE_KEY[layer].map((k) => (
+            <li key={k.text} className="flex items-center gap-2">
+              <span className="h-3 w-3 shrink-0 rounded-sm ring-1 ring-inset ring-black/10" style={{ background: k.swatch }} />{k.text}
+            </li>
+          ))}
+        </ul>
+      )}
       {lg && layer !== "valid_mask" && (
         <>
           <div className="mt-2 h-2.5 rounded-sm ring-1 ring-inset ring-black/10" style={{ background: isDelta ? RDBU_R : GREYS }} />

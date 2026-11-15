@@ -4,7 +4,7 @@ import type { FeatureCollection } from "geojson";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   API_BASE, LEVEL_STYLE, PATTERNS, api, fmtDate, fmtDb, fmtDbNum, fmtHa, fmtLonLat, fmtPct, fmtUtc, safeSentence,
-  type Analysis, type Candidate, type CandidateProps, type Level, type Pattern, type Status,
+  type Analysis, type Candidate, type CandidateProps, type Flag, type Level, type Pattern, type Status,
 } from "@/lib/tt";
 
 const LEVEL_RANK: Record<Level, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
@@ -47,15 +47,15 @@ function Section({ title, children, className = "" }: { title: string; children:
   );
 }
 
-export default function Inspector({ analysis, candidates, selectedId, onSelect }: {
+export default function Inspector({ analysis, candidates, selectedId, onSelect, flags = {} }: {
   analysis: Analysis; candidates: FeatureCollection | null;
-  selectedId: string | null; onSelect: (id: string | null) => void;
+  selectedId: string | null; onSelect: (id: string | null) => void; flags?: Record<string, Flag>;
 }) {
   return (
     <aside className="flex h-full w-[380px] shrink-0 flex-col overflow-hidden rounded-[var(--radius-card)] border border-line bg-card">
       <div className="min-h-0 flex-1 overflow-y-auto">
         {selectedId
-          ? <CandidateDetail key={selectedId} analysis={analysis} id={selectedId} onBack={() => onSelect(null)} />
+          ? <CandidateDetail key={selectedId} analysis={analysis} id={selectedId} onBack={() => onSelect(null)} flag={flags[selectedId]} />
           : <Summary analysis={analysis} candidates={candidates} onSelect={onSelect} />}
       </div>
     </aside>
@@ -116,7 +116,7 @@ function Summary({ analysis: a, candidates, onSelect }: {
               {rows.map((r) => (
                 <tr key={r.candidate_id} onClick={() => onSelect(r.candidate_id)}
                   className="cursor-pointer border-t border-line transition-colors duration-150 hover:bg-canvas">
-                  <td className="py-2 font-semibold">{r.candidate_id}</td>
+                  <td className="py-2 font-semibold">{r.candidate_id}{(r as CandidateProps & { flagged?: boolean }).flagged && <span title="Flagged: likely artifact" className="ml-1 rounded bg-warn-soft px-1 text-[10px] font-semibold text-warn">RFI?</span>}</td>
                   <td className="py-2"><PatternChip pattern={r.pattern} /></td>
                   <td className="py-2 text-right">{fmtHa(r.area_ha)} <span className="text-muted">ha</span></td>
                   <td className="py-2 pl-3"><LevelChip level={r.evidence_level} /></td>
@@ -159,7 +159,7 @@ function Summary({ analysis: a, candidates, onSelect }: {
   );
 }
 
-function CandidateDetail({ analysis: a, id, onBack }: { analysis: Analysis; id: string; onBack: () => void }) {
+function CandidateDetail({ analysis: a, id, onBack, flag }: { analysis: Analysis; id: string; onBack: () => void; flag?: Flag }) {
   const [c, setC] = useState<Candidate | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
@@ -180,6 +180,7 @@ function CandidateDetail({ analysis: a, id, onBack }: { analysis: Analysis; id: 
     <div>
       <div className="px-5 pb-4 pt-5">
         {back}
+        {flag && <p className="mt-3 rounded-lg bg-warn-soft p-3 text-[13px] text-warn"><b>Analyst flag: {flag.label}.</b> {flag.note}</p>}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <h2 className="text-[20px] font-semibold tracking-tight">{c.candidate_id}</h2>
           <PatternChip pattern={c.pattern} />

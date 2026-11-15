@@ -4,27 +4,44 @@ import type { FeatureCollection } from "geojson";
 import { useCallback, useEffect, useState } from "react";
 import Inspector, { StatusIcon } from "./Inspector";
 import MapPanel, { MapSkeleton } from "./MapPanel";
+import { CompareView, InsightsView, MethodView, StoryView } from "./Views";
 import {
-  API_BASE, ApiError, api, fmtUtc, type Analysis, type AnalysisListItem, type Scene,
+  API_BASE, ApiError, api, flagMap, fmtUtc, type Analysis, type AnalysisListItem, type Flag, type Rainfall, type Scene, type Story,
 } from "@/lib/tt";
+
+type View = "story" | "explore" | "compare" | "insights" | "method";
+const NAV: { id: View; label: string; hint: string }[] = [
+  { id: "story", label: "Story", hint: "Guided tour of what changed" },
+  { id: "explore", label: "Explore", hint: "Change map and evidence" },
+  { id: "compare", label: "Compare", hint: "Before / after swipe" },
+  { id: "insights", label: "Insights", hint: "Numbers, rainfall, charts" },
+  { id: "method", label: "Method", hint: "How it works, sources" },
+];
 
 type Load =
   | { kind: "loading" }
   | { kind: "api_down" }
   | { kind: "no_analysis" }
   | { kind: "error"; msg: string }
-  | { kind: "ready"; list: AnalysisListItem[]; analysis: Analysis; candidates: FeatureCollection };
+  | { kind: "ready"; list: AnalysisListItem[]; analysis: Analysis; candidates: FeatureCollection;
+      story: Story | null; rain: Rainfall | null; flags: Record<string, Flag> };
 
 async function fetchState(wanted?: string): Promise<Load> {
   try {
     const list = await api<{ default_analysis_id: string | null; analyses: AnalysisListItem[] }>("/api/analyses");
     const id = wanted ?? new URLSearchParams(location.search).get("analysis") ?? list.default_analysis_id;
     if (!id) return { kind: "no_analysis" };
-    const [analysis, candidates] = await Promise.all([
-      api<Analysis>(`/api/analyses/${encodeURIComponent(id)}`),
-      api<FeatureCollection>(`/api/analyses/${encodeURIComponent(id)}/candidates`),
+    const q = encodeURIComponent(id);
+    const [analysis, candidates, story, ctx] = await Promise.all([
+      api<Analysis>(`/api/analyses/${q}`),
+      api<FeatureCollection>(`/api/analyses/${q}/candidates`),
+      api<Story>(`/api/analyses/${q}/story`).catch(() => null),
+      api<{ rainfall: Rainfall | null }>(`/api/analyses/${q}/context`).catch(() => null),
     ]);
-    return { kind: "ready", list: list.analyses, analysis, candidates };
+    const flags = flagMap(story);
+    for (const f of candidates.features) if (f.properties && flags[f.properties.candidate_id]) f.properties.flagged = true;
+    return { kind: "ready", list: list.analyses, analysis, candidates, story: story?.chapters.length ? story : null,
+      rain: ctx?.rainfall ?? null, flags };
   } catch (e) {
     if (e instanceof ApiError) return e.status === 404 ? { kind: "no_analysis" } : { kind: "error", msg: e.message };
     return { kind: "api_down" };
@@ -36,9 +53,13 @@ export default function Workspace() {
   const [layer, setLayer] = useState("a_hh_db");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [qaOpen, setQaOpen] = useState(false);
+  const [view, setView] = useState<View>("story");
 
   const apply = useCallback((s: Load) => {
-    if (s.kind === "ready") setLayer(s.analysis.layers.delta_hh_db ? "delta_hh_db" : "a_hh_db");
+    if (s.kind === "ready") {
+      setLayer(s.analysis.tiles.change_hh ? "change_hh" : s.analysis.layers.delta_hh_db ? "delta_hh_db" : "a_hh_db");
+      setView((v) => (v === "story" && !s.story ? "explore" : v));
+    }
     setState(s);
   }, []);
   const load = useCallback((wanted?: string) => {
@@ -76,19 +97,30 @@ export default function Workspace() {
         </div>
       )}
       <div className="flex min-h-0 flex-1">
-        <Sidebar />
+        <Sidebar view={view} setView={setView} hasStory={state.kind === "ready" && !!state.story} />
         <main className="flex min-w-0 flex-1 flex-col gap-3 p-3 pl-0">
           {state.kind === "ready" ? (
             <>
               <TopBar analysis={state.analysis} list={state.list} onSwitch={switchAnalysis} onOpenQa={() => setQaOpen(true)} />
               <StatusBanner analysis={state.analysis} />
-              <div className="flex min-h-0 flex-1 gap-3">
-                <div className="min-w-0 flex-1">
-                  <MapPanel analysis={state.analysis} candidates={state.candidates} layer={layer} setLayer={setLayer}
-                    selectedId={selectedId} onSelect={setSelectedId} />
+              {view === "story" && state.story ? (
+                <StoryView analysis={state.analysis} candidates={state.candidates} story={state.story} rain={state.rain} flags={state.flags} />
+              ) : view === "compare" ? (
+                <CompareView analysis={state.analysis} story={state.story} />
+              ) : view === "insights" ? (
+                <InsightsView analysis={state.analysis} candidates={state.candidates} rain={state.rain} flags={state.flags}
+                  onOpen={(id) => { setView("explore"); setSelectedId(id); }} />
+              ) : view === "method" ? (
+                <MethodView analysis={state.analysis} rain={state.rain} flags={state.flags} />
+              ) : (
+                <div className="flex min-h-0 flex-1 gap-3">
+                  <div className="min-w-0 flex-1">
+                    <MapPanel analysis={state.analysis} candidates={state.candidates} layer={layer} setLayer={setLayer}
+                      selectedId={selectedId} onSelect={setSelectedId} />
+                  </div>
+                  <Inspector analysis={state.analysis} candidates={state.candidates} selectedId={selectedId} onSelect={setSelectedId} flags={state.flags} />
                 </div>
-                <Inspector analysis={state.analysis} candidates={state.candidates} selectedId={selectedId} onSelect={setSelectedId} />
-              </div>
+              )}
               {qaOpen && <QaDrawer analysis={state.analysis} onClose={() => setQaOpen(false)} />}
             </>
           ) : state.kind === "loading" ? (
@@ -112,10 +144,7 @@ function Logo() {
   );
 }
 
-function Sidebar() {
-  const nav = [
-    { label: "Workspace", active: true, hint: "" },
-  ];
+function Sidebar({ view, setView, hasStory }: { view: View; setView: (v: View) => void; hasStory: boolean }) {
   return (
     <nav className="flex w-[208px] shrink-0 flex-col px-3 py-4" aria-label="Main">
       <div className="flex items-center gap-2.5 px-2">
@@ -125,14 +154,15 @@ function Sidebar() {
       <p className="mt-2 px-2 text-[12px] leading-snug text-muted">
         A platform for tracing and understanding changes across Earth&apos;s surface.
       </p>
-      <ul className="mt-6 space-y-0.5">
-        {nav.map((n) => (
-          <li key={n.label}>
-            <span aria-current={n.active ? "page" : undefined} aria-disabled={!n.active}
-              className={`flex h-9 items-center justify-between rounded-lg px-2.5 text-[13px] font-medium
-                ${n.active ? "bg-card text-ink shadow-sm ring-1 ring-line" : "cursor-not-allowed text-ink-2/60"}`}>
-              {n.label}{n.hint && <span className="text-[11px] font-normal">{n.hint}</span>}
-            </span>
+      <ul className="mt-6 space-y-1">
+        {NAV.filter((n) => n.id !== "story" || hasStory).map((n) => (
+          <li key={n.id}>
+            <button type="button" aria-current={view === n.id ? "page" : undefined} onClick={() => setView(n.id)}
+              className={`w-full rounded-lg px-2.5 py-2 text-left transition-colors duration-150
+                ${view === n.id ? "bg-card shadow-sm ring-1 ring-line" : "hover:bg-card/60"}`}>
+              <span className={`block text-[14px] font-medium ${view === n.id ? "text-ink" : "text-ink-2"}`}>{n.label}</span>
+              <span className="block text-[11px] text-muted">{n.hint}</span>
+            </button>
           </li>
         ))}
       </ul>

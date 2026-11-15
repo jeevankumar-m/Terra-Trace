@@ -23,7 +23,7 @@ from analysis import config
 from analysis.compare_pair import compute_layers, display_ranges, write_outputs
 from analysis.detect_candidates import detect
 from analysis.inspect_product import open_scene, scene_manifest
-from analysis.prepare_gcov import load_aoi, prepare, to_crs
+from analysis.prepare_gcov import Decimated, load_aoi, prepare, to_crs
 from analysis.summarize import fmt_db, summarize
 from analysis.validate_pair import _check, validate_pair
 
@@ -46,7 +46,8 @@ def code_version() -> str:
 
 
 def run(scene_a: str, scene_b: str | None, aoi_path: str, analysis_id: str, area_id: str | None = None,
-        force_exploratory: bool = False, out_root: Path = config.DERIVED_DIR, hash_files: bool = True) -> dict:
+        force_exploratory: bool = False, out_root: Path = config.DERIVED_DIR, hash_files: bool = True,
+        decimate: int = 1, mmu_ha: float | None = None) -> dict:
     out = Path(out_root) / analysis_id
     if out.exists():
         shutil.rmtree(out)
@@ -62,6 +63,10 @@ def run(scene_a: str, scene_b: str | None, aoi_path: str, analysis_id: str, area
     synthetic = any(str(m.get("mission_id", "")).upper().startswith("SYNTHETIC") for m in (ma, mb) if m)
 
     sa, sb = open_scene(scene_a), (open_scene(scene_b) if scene_b else None)
+    if decimate > 1:  # regional run: n x n block mean of linear power while reading (no extra multilook after)
+        sa, sb = Decimated(sa, decimate), (Decimated(sb, decimate) if sb else None)
+    multilook_n = 1 if decimate > 1 else config.MULTILOOK_WINDOW
+    mmu_ha = config.MMU_HA if mmu_ha is None else mmu_ha
     qa = validate_pair(ma, mb, aoi) if mb else None
     use_hv = ma["has_hv"] and (mb is None or mb["has_hv"])
     prep = prepare(sa, sb, aoi, use_hv=use_hv)
@@ -87,7 +92,7 @@ def run(scene_a: str, scene_b: str | None, aoi_path: str, analysis_id: str, area
     else:
         status, level = "qa_failed", None
 
-    layers = compute_layers(prep)
+    layers = compute_layers(prep, multilook_n)
     if status == "qa_failed":  # failed pair: per-date layers only, no deltas, no candidates
         layers = {k: v for k, v in layers.items() if not k.startswith("delta_")}
     paths, audit = write_outputs(prep, layers, out)
@@ -97,7 +102,7 @@ def run(scene_a: str, scene_b: str | None, aoi_path: str, analysis_id: str, area
 
     candidates, fc, det = [], {"type": "FeatureCollection", "features": []}, None
     if "delta_hh_db" in layers:
-        det = detect(layers, prep["valid"], prep["transform"], px_area)
+        det = detect(layers, prep["valid"], prep["transform"], px_area, mmu_ha=mmu_ha)
         candidates, fc = summarize(det, layers, prep["valid"], px_area, epsg,
                                    pair_passed=bool(qa and qa["passed"]), exploratory=status == "exploratory")
     if det and qa:
@@ -115,10 +120,11 @@ def run(scene_a: str, scene_b: str | None, aoi_path: str, analysis_id: str, area
     total_ha = sum(c["area_ha"] for c in candidates)
     threshold = {"method": "robust_mad", "value": config.K_ROBUST, "k": config.K_ROBUST,
                  "rule": "|z_robust| >= k on dHH or dHV", "z_formula": "0.6745*(delta-median)/MAD",
-                 "background_z": config.BACKGROUND_Z, "mmu_ha": config.MMU_HA,
+                 "background_z": config.BACKGROUND_Z, "mmu_ha": mmu_ha,
                  "mmu_pixels": det["mmu_pixels"] if det else None, "connectivity": config.CONNECTIVITY,
-                 "multilook": f"{config.MULTILOOK_WINDOW}x{config.MULTILOOK_WINDOW} boxcar on linear power"
-                 if config.MULTILOOK_WINDOW > 1 else "none",
+                 "multilook": (f"{decimate}x{decimate} block mean of linear power while reading "
+                               f"({prep['record']['pixel_area_m2'] ** 0.5:g} m pixels)") if decimate > 1
+                 else f"{multilook_n}x{multilook_n} boxcar on linear power" if multilook_n > 1 else "none",
                  "speckle_filter": f"median {config.SPECKLE_FILTER_SIZE}x{config.SPECKLE_FILTER_SIZE}"
                  if config.SPECKLE_FILTER else "none"}
     background = {f"delta_{k}_db": {"median": round(v["median"], 4) if v["median"] is not None else None,
@@ -193,8 +199,11 @@ def main():
     ap.add_argument("--force-exploratory", action="store_true",
                     help="compute deltas even if pair QA fails; everything downstream is labelled exploratory")
     ap.add_argument("--no-hash", action="store_true", help="skip SHA-256 of source files (faster)")
+    ap.add_argument("--decimate", type=int, default=1, help="regional run: n x n block mean while reading (5 -> 50 m)")
+    ap.add_argument("--mmu-ha", type=float, help="minimum mapping unit in ha (default config.MMU_HA)")
     a = ap.parse_args()
-    m = run(a.scene_a, a.scene_b, a.aoi, a.analysis_id, a.area_id, a.force_exploratory, hash_files=not a.no_hash)
+    m = run(a.scene_a, a.scene_b, a.aoi, a.analysis_id, a.area_id, a.force_exploratory, hash_files=not a.no_hash,
+            decimate=a.decimate, mmu_ha=a.mmu_ha)
     s = m["summary"]
     print(f"[{m['analysis_id']}] status={m['status']} level={m['fallback_level']} "
           f"synthetic={m['synthetic']}")

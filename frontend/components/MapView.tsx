@@ -3,18 +3,12 @@
 import type { FeatureCollection, Geometry } from "geojson";
 import maplibregl, { type StyleSpecification } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
-import { API_BASE, PATTERNS, fmtHa, type Analysis, type CandidateProps } from "@/lib/tt";
+import { API_BASE, PATTERNS, SAT_STYLE, fmtHa, type Analysis, type CandidateProps } from "@/lib/tt";
 
 // Floating cards cover the left edge of the map; keep the AOI and candidates clear of them.
 const PAD = { top: 32, bottom: 32, left: 336, right: 32 };
 const SEL_PAD = { top: 80, bottom: 80, left: 360, right: 80 };
 
-// OpenFreeMap Positron (MIT styles, OpenMapTiles + OpenStreetMap data; attribution shipped in the style).
-const BASEMAP = "https://tiles.openfreemap.org/styles/positron";
-const BLANK: StyleSpecification = {
-  version: 8, sources: {},
-  layers: [{ id: "bg", type: "background", paint: { "background-color": "#eef0f3" } }],
-};
 
 const patternColor: maplibregl.ExpressionSpecification = [
   "match", ["get", "pattern"],
@@ -22,15 +16,10 @@ const patternColor: maplibregl.ExpressionSpecification = [
   "#8a8984",
 ] as unknown as maplibregl.ExpressionSpecification;
 
-async function loadStyle(): Promise<StyleSpecification | string> {
-  try {
-    const ctl = new AbortController();
-    const t = setTimeout(() => ctl.abort(), 4000);
-    const r = await fetch(BASEMAP, { signal: ctl.signal });
-    clearTimeout(t);
-    if (r.ok) return BASEMAP;
-  } catch {}
-  return BLANK; // offline venue: NISAR layers still render on a neutral background
+// Satellite basemap is plain raster tiles: if the venue is offline they simply don't draw and the
+// NISAR layers still render on the dark background.
+async function loadStyle(): Promise<StyleSpecification> {
+  return structuredClone(SAT_STYLE);
 }
 
 export interface MapViewProps {
@@ -42,13 +31,16 @@ export interface MapViewProps {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   fitToken: number;
+  focus?: { bounds: [number, number, number, number]; token: number };
+  onMap?: (m: maplibregl.Map) => void;
 }
 
 export default function MapView(p: MapViewProps) {
   const el = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const onSelect = useRef(p.onSelect);
-  useEffect(() => { onSelect.current = p.onSelect; });
+  const onMapRef = useRef(p.onMap);
+  useEffect(() => { onSelect.current = p.onSelect; onMapRef.current = p.onMap; });
   const [ready, setReady] = useState(false);
   const { analysis } = p;
 
@@ -67,12 +59,12 @@ export default function MapView(p: MapViewProps) {
       map.addControl(new maplibregl.ScaleControl({ unit: "metric", maxWidth: 120 }), "bottom-left");
       map.on("load", () => {
         const m = map!;
-        const beforeSymbols = m.getStyle().layers.find((l) => l.type === "symbol")?.id;
+        const beforeSymbols = m.getLayer("labels") ? "labels" : m.getStyle().layers.find((l) => l.type === "symbol")?.id;
         for (const [k, url] of Object.entries(analysis.tiles)) {
           m.addSource(`r-${k}`, { type: "raster", tiles: [API_BASE + url], tileSize: 256,
             bounds: analysis.bounds_lonlat, maxzoom: 15 });
           m.addLayer({ id: `r-${k}`, type: "raster", source: `r-${k}`, layout: { visibility: "none" },
-            paint: { "raster-resampling": "nearest", "raster-fade-duration": 0 } }, beforeSymbols);
+            paint: { "raster-resampling": /^(rgb_|change_)/.test(k) ? "linear" : "nearest", "raster-fade-duration": 0 } }, beforeSymbols);
         }
         m.addSource("aoi", { type: "geojson", data: { type: "Feature", geometry: analysis.aoi, properties: {} } });
         m.addLayer({ id: "aoi-casing", type: "line", source: "aoi", paint: { "line-color": "#ffffff", "line-width": 3.5, "line-opacity": 0.9 } });
@@ -87,11 +79,12 @@ export default function MapView(p: MapViewProps) {
         m.addLayer({ id: "cand-casing", type: "line", source: "cand", paint: {
           "line-color": "#14213d", "line-opacity": 0.55,
           "line-width": ["case", sel, 5, 2.75] as unknown as number } });
+        const dashed = ["any", ["==", ["get", "pattern"], "AMBIGUOUS_MIXED"], ["==", ["get", "flagged"], true]];
         m.addLayer({ id: "cand-line", type: "line", source: "cand",
-          filter: ["!=", ["get", "pattern"], "AMBIGUOUS_MIXED"], paint: {
+          filter: ["!", dashed] as unknown as maplibregl.FilterSpecification, paint: {
           "line-color": patternColor, "line-width": ["case", sel, 3, 1.5] as unknown as number } });
         m.addLayer({ id: "cand-line-amb", type: "line", source: "cand",
-          filter: ["==", ["get", "pattern"], "AMBIGUOUS_MIXED"], paint: {
+          filter: dashed as unknown as maplibregl.FilterSpecification, paint: {
           "line-color": "#f2f2f0", "line-width": ["case", sel, 3, 1.5] as unknown as number, "line-dasharray": [2, 1.5] } });
 
         const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 });
@@ -120,6 +113,7 @@ export default function MapView(p: MapViewProps) {
           onSelect.current(f ? (f.properties as CandidateProps).candidate_id : null);
         });
         setReady(true);
+        onMapRef.current?.(m);
       });
     });
     return () => {
@@ -170,6 +164,10 @@ export default function MapView(p: MapViewProps) {
       m.fitBounds(b, { padding: SEL_PAD, maxZoom: 15, duration: 600 });
     }
   }, [ready, p.selectedId, p.candidates]);
+
+  useEffect(() => {
+    if (ready && p.focus && mapRef.current) mapRef.current.fitBounds(p.focus.bounds, { padding: 40, duration: 1600, essential: true });
+  }, [ready, p.focus]);
 
   useEffect(() => {
     if (p.fitToken && mapRef.current) mapRef.current.fitBounds(analysis.bounds_lonlat, { padding: PAD, duration: 500 });
